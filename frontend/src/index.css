@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+body {
+    font-family: Inter, system-ui, sans-serif;
+}
+.card {
+    @apply bg-white/80 backdrop-blur-xl rounded-[28px] p-6
+    shadow-[0_20px_50px_-12px_rgba(0,0,0,0.12)]
+    border border-white/40
+    transition-transform duration-300 hover:-translate-y-1;
+}
