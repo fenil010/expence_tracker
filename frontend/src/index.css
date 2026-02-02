@@ -1,11 +1,55 @@
 @import "tailwindcss";
 
-body {
-    font-family: Inter, system-ui, sans-serif;
+/* Apple-inspired base styles */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+  background: linear-gradient(to bottom right, #fafafa, #f5f5f5);
+}
+
+/* Premium glass card component */
 .card {
-    @apply bg-white/80 backdrop-blur-xl rounded-[28px] p-6
-    shadow-[0_20px_50px_-12px_rgba(0,0,0,0.12)]
-    border border-white/40
-    transition-transform duration-300 hover:-translate-y-1;
+  @apply bg-white/80 backdrop-blur-xl rounded-2xl p-6
+  shadow-sm border border-neutral-200/50
+  transition-all duration-200 ease-out;
+}
+
+.card:hover {
+  @apply shadow-md -translate-y-0.5;
+}
+
+/* Input field styles - Apple-inspired */
+.input-field {
+  @apply w-full px-4 py-3 rounded-xl
+  bg-neutral-50 border border-neutral-200
+  text-neutral-900 placeholder:text-neutral-400
+  focus:outline-none focus:border-neutral-400
+  transition-all duration-150;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply px-6 py-3 rounded-xl font-medium
+  bg-blue-600 text-white
+  hover:bg-blue-700
+  active:scale-[0.98]
+  transition-all duration-150
+  shadow-sm;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 rounded-xl font-medium
+  bg-neutral-100 text-neutral-900
+  hover:bg-neutral-200
+  active:scale-[0.98]
+  transition-all duration-150;
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  @apply transition-all duration-200 ease-out;
 }
