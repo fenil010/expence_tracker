@@ -58,17 +58,17 @@ export default function AddExpenseModal({ isOpen, onClose, onAdd }) {
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-3xl shadow-xl max-w-md w-full p-8 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-in fade-in zoom-in-95 duration-200 border border-neutral-100/50">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-neutral-900">
+        <div className="flex items-center justify-between mb-7">
+          <h2 className="text-2xl font-bold text-neutral-900">
             Add Transaction
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center transition-colors"
+            className="w-9 h-9 rounded-xl bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center transition-all duration-300 hover:scale-110"
           >
-            <span className="text-neutral-600">✕</span>
+            <span className="text-neutral-600 font-bold">✕</span>
           </button>
         </div>
 
@@ -76,16 +76,16 @@ export default function AddExpenseModal({ isOpen, onClose, onAdd }) {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Type Toggle */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
+            <label className="block text-xs font-bold text-neutral-700 mb-3 uppercase tracking-wide">
               Type
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => handleChange('type', 'expense')}
-                className={`py-3 px-4 rounded-xl font-medium transition-all ${
+                className={`py-3 px-4 rounded-xl font-bold transition-all duration-300 ${
                   formData.type === 'expense'
-                    ? 'bg-rose-500 text-white shadow-soft'
+                    ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-lg scale-105'
                     : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
                 }`}
               >
@@ -94,9 +94,9 @@ export default function AddExpenseModal({ isOpen, onClose, onAdd }) {
               <button
                 type="button"
                 onClick={() => handleChange('type', 'income')}
-                className={`py-3 px-4 rounded-xl font-medium transition-all ${
+                className={`py-3 px-4 rounded-xl font-bold transition-all duration-300 ${
                   formData.type === 'income'
-                    ? 'bg-emerald-500 text-white shadow-soft'
+                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg scale-105'
                     : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
                 }`}
               >
@@ -107,11 +107,11 @@ export default function AddExpenseModal({ isOpen, onClose, onAdd }) {
 
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
+            <label className="block text-xs font-bold text-neutral-700 mb-2 uppercase tracking-wide">
               Amount
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 font-medium">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 font-bold text-lg">
                 $
               </span>
               <input
@@ -121,7 +121,7 @@ export default function AddExpenseModal({ isOpen, onClose, onAdd }) {
                 required
                 value={formData.amount}
                 onChange={(e) => handleChange('amount', e.target.value)}
-                className="input-field pl-8 text-lg font-semibold"
+                className="w-full px-4 pl-8 py-3 bg-neutral-50 border-2 border-neutral-200 rounded-xl text-lg font-bold text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300"
                 placeholder="0.00"
               />
             </div>
@@ -129,13 +129,13 @@ export default function AddExpenseModal({ isOpen, onClose, onAdd }) {
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
+            <label className="block text-xs font-bold text-neutral-700 mb-2 uppercase tracking-wide">
               Category
             </label>
             <select
               value={formData.category}
               onChange={(e) => handleChange('category', e.target.value)}
-              className="input-field"
+              className="w-full px-4 py-3 bg-neutral-50 border-2 border-neutral-200 rounded-xl font-medium text-neutral-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300"
             >
               {CATEGORIES[formData.type].map((cat) => (
                 <option key={cat} value={cat}>
@@ -147,7 +147,7 @@ export default function AddExpenseModal({ isOpen, onClose, onAdd }) {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
+            <label className="block text-xs font-bold text-neutral-700 mb-2 uppercase tracking-wide">
               Description
             </label>
             <input
@@ -155,23 +155,23 @@ export default function AddExpenseModal({ isOpen, onClose, onAdd }) {
               required
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
-              className="input-field"
+              className="w-full px-4 py-3 bg-neutral-50 border-2 border-neutral-200 rounded-xl font-medium text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300"
               placeholder="What was this for?"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-3">
             <button
               type="button"
               onClick={onClose}
-              className="btn-secondary flex-1"
+              className="flex-1 py-3 px-4 bg-neutral-100 text-neutral-700 font-bold rounded-xl hover:bg-neutral-200 transition-all duration-300"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="btn-primary flex-1"
+              className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95"
             >
               Add Transaction
             </button>

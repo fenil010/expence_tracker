@@ -13,10 +13,10 @@ export default function ExpenseList({ transactions }) {
     <div className="card">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-neutral-900">
+        <h2 className="text-xl font-bold text-neutral-900">
           Recent Transactions
         </h2>
-        <button className="text-sm text-accent-600 font-medium hover:text-accent-700 transition-colors">
+        <button className="text-sm text-blue-600 font-semibold hover:text-blue-700 transition-colors hover:scale-105">
           View All
         </button>
       </div>
@@ -26,22 +26,22 @@ export default function ExpenseList({ transactions }) {
         {recentTransactions.map((transaction) => (
           <div
             key={transaction.id}
-            className="flex items-center justify-between p-4 rounded-xl bg-neutral-50/50 hover:bg-neutral-100/50 transition-colors group"
+            className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-neutral-50 to-transparent hover:from-neutral-100 hover:shadow-md transition-all duration-300 group border border-neutral-100/50"
           >
             {/* Left: Icon + Details */}
             <div className="flex items-center gap-4">
               {/* Category Icon */}
-              <div className="w-11 h-11 rounded-xl bg-white shadow-sm flex items-center justify-center text-xl">
+              <div className="w-12 h-12 rounded-xl bg-white shadow-md flex items-center justify-center text-2xl group-hover:shadow-lg transition-shadow duration-300">
                 {getCategoryIcon(transaction.category)}
               </div>
 
               {/* Details */}
               <div>
-                <p className="font-medium text-neutral-900 text-sm">
+                <p className="font-semibold text-neutral-900 text-sm">
                   {transaction.description}
                 </p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-neutral-500">
+                  <span className="text-xs text-neutral-500 font-medium">
                     {transaction.category}
                   </span>
                   <span className="text-neutral-300">•</span>
@@ -54,7 +54,7 @@ export default function ExpenseList({ transactions }) {
 
             {/* Right: Amount */}
             <div className="text-right">
-              <p className={`font-semibold text-base ${
+              <p className={`font-bold text-base ${
                 transaction.type === 'income'
                   ? 'text-emerald-600'
                   : 'text-neutral-900'
@@ -71,7 +71,7 @@ export default function ExpenseList({ transactions }) {
       {recentTransactions.length === 0 && (
         <div className="text-center py-12">
           <div className="text-5xl mb-4">📭</div>
-          <p className="text-neutral-500 text-sm">No transactions yet</p>
+          <p className="text-neutral-500 text-sm font-medium">No transactions yet</p>
         </div>
       )}
     </div>

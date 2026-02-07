@@ -45,7 +45,7 @@ export default function Dashboard() {
   const savings = monthlyIncome - monthlyExpenses;
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-50">
       {/* Navigation */}
       <Navbar
         user={data.user}
@@ -53,9 +53,9 @@ export default function Dashboard() {
       />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-6 py-10">
         {/* Summary Cards - Bento Style */}
-        <div className="mb-8">
+        <div className="mb-10">
           <SummaryCards
             balance={data.balance}
             income={monthlyIncome}
@@ -65,7 +65,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Insights */}
-        <div className="mb-8">
+        <div className="mb-10">
           <QuickInsights transactions={data.transactions} />
         </div>
 

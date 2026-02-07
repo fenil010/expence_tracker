@@ -41,29 +41,29 @@ export default function SummaryCards({ balance, income, expenses, savings }) {
       {cards.map((card, index) => (
         <div
           key={index}
-          className="card group cursor-pointer"
+          className="card group cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-300 border border-neutral-100/50"
         >
           {/* Icon Badge */}
-          <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${card.bgGradient} flex items-center justify-center text-2xl shadow-sm mb-4`}>
+          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.bgGradient} flex items-center justify-center text-3xl shadow-md group-hover:shadow-lg transition-shadow duration-300 mb-4`}>
             {card.icon}
           </div>
 
           {/* Title */}
-          <p className="text-sm font-medium text-neutral-500 mb-2">
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">
             {card.title}
           </p>
 
           {/* Amount */}
           <div className="flex items-baseline justify-between">
-            <h3 className="text-3xl font-semibold text-neutral-900 tracking-tight">
+            <h3 className="text-3xl font-bold text-neutral-900 tracking-tight">
               {formatCurrency(card.amount)}
             </h3>
             
             {/* Trend */}
-            <span className={`text-xs font-medium px-2 py-1 rounded-md ${
+            <span className={`text-xs font-bold px-2.5 py-1.5 rounded-lg ${
               card.trendUp 
-                ? 'bg-emerald-50 text-emerald-600' 
-                : 'bg-rose-50 text-rose-600'
+                ? 'bg-emerald-100 text-emerald-700' 
+                : 'bg-rose-100 text-rose-700'
             }`}>
               {card.trend}
             </span>
