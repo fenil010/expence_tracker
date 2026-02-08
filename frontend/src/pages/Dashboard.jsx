@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useExpenseData } from '../hooks/useExpenseData';
-import Navbar from '../components/Navbar';
 import SummaryCards from '../components/SummaryCards';
 import ExpenseList from '../components/ExpenseList';
 import SpendingChart from '../components/SpendingChart';
@@ -9,6 +8,17 @@ import SavingsGoals from '../components/SavingsGoals';
 import BudgetOverview from '../components/BudgetOverview';
 import QuickInsights from '../components/QuickInsights';
 import AddExpenseModal from '../components/AddExpenseModal';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  Button,
+} from '@mui/material';
+import {
+  Add as AddIcon,
+} from '@mui/icons-material';
 
 export default function Dashboard() {
   const {
@@ -25,9 +35,9 @@ export default function Dashboard() {
 
   if (loading || !data) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-neutral-500 text-lg">Loading...</div>
-      </div>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography color="text.secondary">Loading...</Typography>
+      </Box>
     );
   }
 
@@ -45,49 +55,63 @@ export default function Dashboard() {
   const savings = monthlyIncome - monthlyExpenses;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-50">
-      {/* Navigation */}
-      <Navbar
-        user={data.user}
-        onAddExpense={() => setShowAddModal(true)}
-      />
+    <Box>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>
+            Dashboard
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Welcome back! Here's your financial overview.
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setShowAddModal(true)}
+        >
+          Add Expense
+        </Button>
+      </Box>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-10">
-        {/* Summary Cards - Bento Style */}
-        <div className="mb-10">
-          <SummaryCards
-            balance={data.balance}
-            income={monthlyIncome}
-            expenses={monthlyExpenses}
-            savings={savings}
-          />
-        </div>
+      {/* Summary Cards */}
+      <Box sx={{ mb: 3 }}>
+        <SummaryCards
+          balance={data.balance}
+          income={monthlyIncome}
+          expenses={monthlyExpenses}
+          savings={savings}
+        />
+      </Box>
 
-        {/* Quick Insights */}
-        <div className="mb-10">
-          <QuickInsights transactions={data.transactions} />
-        </div>
+      {/* Quick Insights */}
+      <Box sx={{ mb: 3 }}>
+        <QuickInsights transactions={data.transactions} />
+      </Box>
 
-        {/* Main Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Left Column - 2/3 width */}
-          <div className="lg:col-span-2 space-y-6">
+      {/* Main Grid Layout */}
+      <Grid container spacing={3}>
+        {/* Left Column - 2/3 width */}
+        <Grid item xs={12} lg={8}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <SpendingChart />
             <ExpenseList transactions={data.transactions} />
-          </div>
+          </Box>
+        </Grid>
 
-          {/* Right Column - 1/3 width */}
-          <div className="space-y-6">
+        {/* Right Column - 1/3 width */}
+        <Grid item xs={12} lg={4}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <BudgetOverview 
               monthlyBudget={data.monthlyBudget}
               totalExpenses={monthlyExpenses}
             />
             <CategoryChart transactions={data.transactions} />
             <SavingsGoals goals={data.goals} />
-          </div>
-        </div>
-      </main>
+          </Box>
+        </Grid>
+      </Grid>
 
       {/* Add Expense Modal */}
       <AddExpenseModal
@@ -95,6 +119,6 @@ export default function Dashboard() {
         onClose={() => setShowAddModal(false)}
         onAdd={handleAddTransaction}
       />
-    </div>
+    </Box>
   );
 }
