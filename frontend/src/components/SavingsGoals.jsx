@@ -1,60 +1,43 @@
-import { formatCurrency, calculatePercentage } from '../utils/helpers';
+import { Box, Typography, LinearProgress } from '@mui/material';
+import { tokens, glassCardStatic } from '../theme';
+import { formatCurrency } from '../utils/helpers';
 
-export default function SavingsGoals({ goals }) {
+export default function SavingsGoals({ goals = [] }) {
+  if (goals.length === 0) {
+    return (
+      <Box sx={{ ...glassCardStatic, p: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: '#FFFFFF', mb: 1 }}>Goals</Typography>
+        <Typography variant="body2" sx={{ color: '#666666' }}>No savings goals yet</Typography>
+      </Box>
+    );
+  }
+
   return (
-    <div className="card">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-neutral-900">
-          Savings Goals
-        </h2>
-        <button className="text-sm text-accent-600 font-medium hover:text-accent-700 transition-colors">
-          + New Goal
-        </button>
-      </div>
-
-      <div className="space-y-5">
-        {goals.map((goal) => {
-          const percentage = calculatePercentage(goal.current, goal.target);
-          
-          return (
-            <div key={goal.id} className="space-y-3">
-              {/* Goal Header */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-neutral-900 text-sm">
-                    {goal.name}
-                  </p>
-                  <p className="text-xs text-neutral-500 mt-0.5">
-                    {formatCurrency(goal.current)} of {formatCurrency(goal.target)}
-                  </p>
-                </div>
-                <span className="text-sm font-semibold text-accent-600">
-                  {percentage}%
-                </span>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-linear-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(percentage, 100)}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Empty State */}
-      {goals.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-5xl mb-4">🎯</div>
-          <p className="text-neutral-500 text-sm">No savings goals yet</p>
-          <button className="mt-4 text-sm text-accent-600 font-medium hover:text-accent-700">
-            Create your first goal
-          </button>
-        </div>
-      )}
-    </div>
+    <Box sx={{ ...glassCardStatic, p: 3 }}>
+      <Typography variant="h5" sx={{ fontWeight: 700, color: '#FFFFFF', mb: 2 }}>Goals</Typography>
+      {goals.map((goal, i) => {
+        const pct = goal.target > 0 ? Math.round((goal.current / goal.target) * 100) : 0;
+        return (
+          <Box key={i} sx={{ mb: i < goals.length - 1 ? 2.5 : 0 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#FFFFFF' }}>{goal.name}</Typography>
+              <Typography variant="caption" sx={{ color: '#999999' }}>{pct}%</Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(pct, 100)}
+              sx={{
+                height: 4, bgcolor: 'rgba(255,255,255,0.06)',
+                '& .MuiLinearProgress-bar': { bgcolor: '#FFFFFF' },
+              }}
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+              <Typography variant="caption" sx={{ color: '#666666' }}>{formatCurrency(goal.current)}</Typography>
+              <Typography variant="caption" sx={{ color: '#666666' }}>{formatCurrency(goal.target)}</Typography>
+            </Box>
+          </Box>
+        );
+      })}
+    </Box>
   );
 }

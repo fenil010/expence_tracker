@@ -1,109 +1,73 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { useState, useMemo } from 'react';
+import { Box, Typography } from '@mui/material';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { tokens, glassCardStatic } from '../theme';
 import { formatCurrency } from '../utils/helpers';
 
-export default function CategoryChart({ transactions }) {
-  // Calculate spending by category
-  const categoryData = transactions
-    .filter((t) => t.type === 'expense')
-    .reduce((acc, transaction) => {
-      const existing = acc.find((item) => item.name === transaction.category);
-      if (existing) {
-        existing.value += transaction.amount;
-      } else {
-        acc.push({
-          name: transaction.category,
-          value: transaction.amount,
-        });
-      }
-      return acc;
-    }, [])
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 6); // Top 6 categories
+const COLORS = ['#FFFFFF', '#CCCCCC', '#999999', '#777777', '#555555', '#333333'];
 
-  // Color palette - soft, Apple-inspired colors
-  const COLORS = [
-    '#5c7cfa', // accent blue
-    '#748ffc',
-    '#91a7ff',
-    '#a5b8ff',
-    '#bac8ff',
-    '#d0d9ff',
-  ];
+const CustomTooltip = ({ active, payload }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <Box sx={{ bgcolor: '#1A1A1A', border: `1px solid ${tokens.borderDark}`, p: 1.5 }}>
+      <Typography variant="caption" sx={{ color: '#FFFFFF', fontWeight: 600 }}>{payload[0].name}</Typography>
+      <Typography variant="caption" sx={{ display: 'block', color: '#999999' }}>
+        {formatCurrency(payload[0].value)}
+      </Typography>
+    </Box>
+  );
+};
 
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white/95 backdrop-blur-sm border border-neutral-200 rounded-xl px-4 py-2 shadow-md">
-          <p className="text-sm font-semibold text-neutral-900">
-            {payload[0].name}
-          </p>
-          <p className="text-xs text-neutral-500">
-            {formatCurrency(payload[0].value)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+export default function CategoryChart({ transactions = [] }) {
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  const renderLegend = (props) => {
-    const { payload } = props;
-    return (
-      <div className="flex flex-wrap gap-3 justify-center mt-4">
-        {payload.map((entry, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <div
-              className="w-3 h-3 rounded-sm"
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-xs text-neutral-600">{entry.value}</span>
-          </div>
-        ))}
-      </div>
-    );
-  };
+  const categoryData = useMemo(() => {
+    const cats = {};
+    transactions.filter((t) => t.type === 'expense').forEach((t) => {
+      cats[t.category] = (cats[t.category] || 0) + t.amount;
+    });
+    return Object.entries(cats).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [transactions]);
 
   if (categoryData.length === 0) {
     return (
-      <div className="card">
-        <h2 className="text-xl font-semibold text-neutral-900 mb-6">
-          Spending by Category
-        </h2>
-        <div className="text-center py-12">
-          <div className="text-5xl mb-4">📊</div>
-          <p className="text-neutral-500 text-sm">No expense data yet</p>
-        </div>
-      </div>
+      <Box sx={{ ...glassCardStatic, p: 3, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography variant="body2" sx={{ color: '#666666' }}>No expense data</Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="card">
-      <h2 className="text-xl font-semibold text-neutral-900 mb-6">
-        Spending by Category
-      </h2>
-
-      <div className="h-72">
+    <Box sx={{ ...glassCardStatic, p: 3, height: '100%' }}>
+      <Typography variant="h5" sx={{ fontWeight: 700, color: '#FFFFFF', mb: 0.5 }}>Spending by Category</Typography>
+      <Typography variant="body2" sx={{ color: '#666666', mb: 2 }}>Where your money goes</Typography>
+      <Box sx={{ height: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie
-              data={categoryData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={90}
-              paddingAngle={4}
-              dataKey="value"
-            >
-              {categoryData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            <Pie data={categoryData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value"
+              onMouseEnter={(_, i) => setActiveIndex(i)} onMouseLeave={() => setActiveIndex(0)}>
+              {categoryData.map((_, i) => (
+                <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="none"
+                  style={{ opacity: i === activeIndex ? 1 : 0.6, transition: 'opacity 0.15s', cursor: 'pointer' }}
+                />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
-            <Legend content={renderLegend} />
+            <Legend
+              content={({ payload }) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, justifyContent: 'center', mt: 2 }}>
+                  {payload.map((e, i) => (
+                    <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 8, height: 8, bgcolor: e.color }} />
+                      <Typography variant="caption" sx={{ color: '#999999' }}>{e.value}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            />
           </PieChart>
         </ResponsiveContainer>
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

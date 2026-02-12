@@ -1,195 +1,102 @@
 import { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Box,
-  Drawer,
-  AppBar,
-  Toolbar,
-  List,
-  Typography,
-  Divider,
-  IconButton,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Avatar,
-  Menu,
-  MenuItem,
-  useMediaQuery,
-  useTheme,
-  Badge,
-  Chip,
+  Box, Drawer, AppBar, Toolbar, Typography, List, ListItem,
+  ListItemButton, ListItemIcon, ListItemText, IconButton, Avatar,
+  Badge, Menu, MenuItem, Divider, Button,
 } from '@mui/material';
 import {
-  Menu as MenuIcon,
-  Dashboard as DashboardIcon,
-  Receipt as TransactionsIcon,
-  AccountBalance as BudgetsIcon,
-  Flag as GoalsIcon,
-  Assessment as ReportsIcon,
-  Settings as SettingsIcon,
-  Person as ProfileIcon,
-  Notifications as NotificationsIcon,
-  Add as AddIcon,
-  TrendingUp as TrendingUpIcon,
+  Dashboard as DashboardIcon, Receipt as TransactionsIcon,
+  AccountBalance as BudgetsIcon, Flag as GoalsIcon,
+  BarChart as ReportsIcon, Settings as SettingsIcon,
+  Add as AddIcon, Notifications as NotifIcon,
+  Menu as MenuIcon, ChevronLeft as ChevronLeftIcon,
+  TrendingUp as TrendingUpIcon, Logout as LogoutIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
+import { tokens } from '../theme';
+import Logo from './Logo';
+import AddExpenseModal from './AddExpenseModal';
+import { useExpenseData } from '../hooks/useExpenseData';
 
-const drawerWidth = 280;
-
-const menuItems = [
+const drawerWidth = 240;
+const navItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
   { text: 'Transactions', icon: <TransactionsIcon />, path: '/transactions' },
   { text: 'Budgets', icon: <BudgetsIcon />, path: '/budgets' },
-  { text: 'Goals', icon: <GoalsIcon />, path: '/goals' },
+  { text: 'Goals', icon: <GoalsIcon />, path: '/goals', badge: 3 },
   { text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
 ];
 
-function Layout() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const navigate = useNavigate();
+export default function Layout() {
   const location = useLocation();
-  
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
-  const [notificationAnchor, setNotificationAnchor] = useState(null);
+  const { addTransaction } = useExpenseData();
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
-  const handleMenuClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleNotificationClick = (event) => {
-    setNotificationAnchor(event.currentTarget);
-  };
-
-  const handleNotificationClose = () => {
-    setNotificationAnchor(null);
-  };
+  const currentPage = navItems.find((i) => i.path === location.pathname)?.text || 'Dashboard';
 
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', py: 2 }}>
       {/* Logo */}
-      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Box
-          sx={{
-            width: 44,
-            height: 44,
-            borderRadius: 3,
-            background: 'linear-gradient(135deg, #475569 0%, #64748b 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '1.5rem',
-            boxShadow: '0 4px 12px rgba(71, 85, 105, 0.3)',
-          }}
-        >
-          💎
-        </Box>
+      <Box sx={{ px: 2, mb: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Logo sx={{ width: 32, height: 32, color: '#FFFFFF' }} />
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', lineHeight: 1.2 }}>
+          <Typography variant="body2" sx={{ fontWeight: 700, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
             Expense Tracker
           </Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          <Typography variant="caption" sx={{ color: '#666666', fontSize: '0.65rem' }}>
             Finance Manager
           </Typography>
         </Box>
       </Box>
 
-      <Divider />
-
-      {/* Navigation */}
-      <List sx={{ px: 2, py: 2, flex: 1 }}>
-        {menuItems.map((item) => (
-          <ListItemButton
-            key={item.text}
-            selected={location.pathname === item.path}
-            onClick={() => {
-              navigate(item.path);
-              if (isMobile) setMobileOpen(false);
-            }}
-            sx={{
-              mb: 0.5,
-              '&.Mui-selected': {
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.main',
-                },
-                '& .MuiListItemText-primary': {
-                  fontWeight: 600,
-                  color: 'primary.main',
-                },
-              },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 44 }}>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
-            {item.text === 'Goals' && (
-              <Chip label="3" size="small" color="success" sx={{ height: 22 }} />
-            )}
-          </ListItemButton>
-        ))}
+      {/* Nav */}
+      <List sx={{ flex: 1, px: 1 }}>
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton
+                selected={isActive}
+                onClick={() => { navigate(item.path); setMobileOpen(false); }}
+                sx={{
+                  position: 'relative',
+                  ...(isActive && {
+                    '&::before': {
+                      content: '""', position: 'absolute', left: 0, top: '20%', bottom: '20%',
+                      width: 2, bgcolor: '#FFFFFF',
+                    },
+                  }),
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36, color: isActive ? '#FFFFFF' : '#666666' }}>
+                  {item.badge ? (
+                    <Badge badgeContent={item.badge} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.55rem', minWidth: 16, height: 16 } }}>
+                      {item.icon}
+                    </Badge>
+                  ) : item.icon}
+                </ListItemIcon>
+                <ListItemText primary={item.text} primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: isActive ? 600 : 400 }} />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
       </List>
 
-      <Divider />
-
-      {/* Upgrade Card */}
-      <Box sx={{ p: 2 }}>
+      {/* User */}
+      <Box sx={{ px: 2, pt: 2, borderTop: `1px solid ${tokens.borderDark}` }}>
         <Box
-          sx={{
-            p: 2,
-            borderRadius: 3,
-            bgcolor: 'rgba(71, 85, 105, 0.06)',
-            border: '1px solid rgba(71, 85, 105, 0.1)',
-          }}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', py: 1 }}
+          onClick={() => navigate('/profile')}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <TrendingUpIcon sx={{ color: 'success.main', fontSize: 20 }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-              Pro Plan
-            </Typography>
-          </Box>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-            Unlock all features and advanced analytics
-          </Typography>
-          <Chip
-            label="Upgrade"
-            size="small"
-            color="primary"
-            clickable
-            sx={{ fontWeight: 600 }}
-          />
-        </Box>
-      </Box>
-
-      {/* User Info */}
-      <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Avatar
-            sx={{
-              width: 40,
-              height: 40,
-              bgcolor: 'primary.main',
-              fontWeight: 600,
-            }}
-          >
-            JD
-          </Avatar>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: '#333333', color: '#FFFFFF', fontSize: '0.75rem', fontWeight: 600 }}>JD</Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
-              John Doe
-            </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap>
-              john@example.com
-            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem', color: '#FFFFFF' }}>John Doe</Typography>
+            <Typography variant="caption" sx={{ color: '#666666', fontSize: '0.65rem' }}>john@example.com</Typography>
           </Box>
         </Box>
       </Box>
@@ -197,174 +104,94 @@ function Layout() {
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* App Bar */}
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* AppBar */}
       <AppBar
         position="fixed"
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
-          bgcolor: 'background.paper',
-          color: 'text.primary',
+          bgcolor: '#000000',
+          color: '#FFFFFF',
+          borderBottom: `1px solid ${tokens.borderDark}`,
         }}
         elevation={0}
       >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {menuItems.find((item) => item.path === location.pathname)?.text || 'Dashboard'}
-          </Typography>
-
-          {/* Actions */}
-          <IconButton color="inherit" onClick={() => navigate('/transactions')}>
-            <AddIcon />
-          </IconButton>
-
-          <IconButton color="inherit" onClick={handleNotificationClick}>
-            <Badge badgeContent={3} color="error">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
-
-          <IconButton onClick={handleMenuClick} sx={{ ml: 1 }}>
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: 'primary.main',
-                fontWeight: 600,
-              }}
-            >
-              JD
-            </Avatar>
-          </IconButton>
-
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          >
-            <MenuItem onClick={() => { navigate('/profile'); handleMenuClose(); }}>
-              <ListItemIcon><ProfileIcon fontSize="small" /></ListItemIcon>
-              Profile
-            </MenuItem>
-            <MenuItem onClick={() => { navigate('/settings'); handleMenuClose(); }}>
-              <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
-              Settings
-            </MenuItem>
-            <Divider />
-            <MenuItem onClick={handleMenuClose}>Logout</MenuItem>
-          </Menu>
-
-          <Menu
-            anchorEl={notificationAnchor}
-            open={Boolean(notificationAnchor)}
-            onClose={handleNotificationClose}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            PaperProps={{ sx: { width: 320, maxHeight: 400 } }}
-          >
-            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                Notifications
-              </Typography>
-            </Box>
-            <MenuItem onClick={handleNotificationClose}>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  Budget Alert
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  You've reached 80% of your food budget
-                </Typography>
-              </Box>
-            </MenuItem>
-            <MenuItem onClick={handleNotificationClose}>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  Goal Achieved! 🎉
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  You've saved $500 for your vacation
-                </Typography>
-              </Box>
-            </MenuItem>
-            <MenuItem onClick={handleNotificationClose}>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  Weekly Report Ready
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  View your spending summary for last week
-                </Typography>
-              </Box>
-            </MenuItem>
-          </Menu>
+        <Toolbar sx={{ justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton onClick={() => setMobileOpen(!mobileOpen)} sx={{ display: { md: 'none' }, color: '#FFFFFF' }}>
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="body1" sx={{ fontWeight: 600, color: '#FFFFFF' }}>
+              {currentPage}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton onClick={() => setShowAddModal(true)} sx={{ color: '#FFFFFF' }}>
+              <AddIcon />
+            </IconButton>
+            <IconButton>
+              <Badge badgeContent={3} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.55rem', minWidth: 16, height: 16 } }}>
+                <NotifIcon />
+              </Badge>
+            </IconButton>
+            <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+              <Avatar sx={{ width: 28, height: 28, bgcolor: '#333333', color: '#FFFFFF', fontSize: '0.7rem', fontWeight: 600 }}>JD</Avatar>
+            </IconButton>
+          </Box>
         </Toolbar>
       </AppBar>
 
-      {/* Drawer */}
-      <Box
-        component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
-      >
-        {/* Mobile drawer */}
+      {/* User menu */}
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+        <MenuItem onClick={() => { navigate('/profile'); setAnchorEl(null); }}>
+          <PersonIcon sx={{ fontSize: 16, mr: 1.5 }} /> Profile
+        </MenuItem>
+        <MenuItem onClick={() => { navigate('/settings'); setAnchorEl(null); }}>
+          <SettingsIcon sx={{ fontSize: 16, mr: 1.5 }} /> Settings
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => setAnchorEl(null)} sx={{ color: '#FF4444' }}>
+          <LogoutIcon sx={{ fontSize: 16, mr: 1.5 }} /> Logout
+        </MenuItem>
+      </Menu>
+
+      {/* Sidebar */}
+      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         <Drawer
           variant="temporary"
           open={mobileOpen}
-          onClose={handleDrawerToggle}
+          onClose={() => setMobileOpen(false)}
           ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { width: drawerWidth },
-          }}
+          sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { width: drawerWidth } }}
         >
           {drawer}
         </Drawer>
-
-        {/* Desktop drawer */}
         <Drawer
           variant="permanent"
-          sx={{
-            display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': {
-              width: drawerWidth,
-              boxSizing: 'border-box',
-              bgcolor: 'background.paper',
-            },
-          }}
+          sx={{ display: { xs: 'none', md: 'block' }, '& .MuiDrawer-paper': { width: drawerWidth } }}
           open
         >
           {drawer}
         </Drawer>
       </Box>
 
-      {/* Main content */}
+      {/* Main */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
           width: { md: `calc(100% - ${drawerWidth}px)` },
-          mt: '64px',
-          minHeight: 'calc(100vh - 64px)',
+          minHeight: '100vh',
+          pt: { xs: 8, md: 9 },
+          px: { xs: 2, sm: 3, md: 4 },
+          pb: 4,
         }}
       >
         <Outlet />
       </Box>
+
+      <AddExpenseModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onAdd={addTransaction} />
     </Box>
   );
 }
-
-export default Layout;
-

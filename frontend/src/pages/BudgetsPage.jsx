@@ -1,286 +1,74 @@
-import { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Grid,
-  LinearProgress,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Avatar,
-  Divider,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  MoreVert as MoreIcon,
-  TrendingUp as TrendingUpIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material';
+import { useMemo } from 'react';
+import { Box, Typography, LinearProgress, Grid } from '@mui/material';
+import { Warning as WarnIcon } from '@mui/icons-material';
+import { useExpenseData } from '../hooks/useExpenseData';
+import { formatCurrency } from '../utils/helpers';
+import { tokens, glassCardStatic } from '../theme';
 
-const budgets = [
-  { id: 1, category: 'Food & Dining', spent: 650, limit: 800, color: '#22c55e', icon: '🍔' },
-  { id: 2, category: 'Transportation', spent: 320, limit: 400, color: '#3b82f6', icon: '🚗' },
-  { id: 3, category: 'Entertainment', spent: 180, limit: 200, color: '#a855f7', icon: '🎬' },
-  { id: 4, category: 'Shopping', spent: 450, limit: 500, color: '#f59e0b', icon: '🛍️' },
-  { id: 5, category: 'Utilities', spent: 290, limit: 300, color: '#06b6d4', icon: '💡' },
-  { id: 6, category: 'Healthcare', spent: 150, limit: 200, color: '#ec4899', icon: '💊' },
-];
+export default function BudgetsPage() {
+  const { data } = useExpenseData();
+  const budgets = data?.budgets || [];
+  const transactions = data?.transactions || [];
 
-const recentTransactions = [
-  { id: 1, description: 'Grocery Store', amount: 85.50, category: 'Food & Dining', date: 'Today' },
-  { id: 2, description: 'Gas Station', amount: 45.00, category: 'Transportation', date: 'Today' },
-  { id: 3, description: 'Netflix', amount: 15.99, category: 'Entertainment', date: 'Yesterday' },
-  { id: 4, description: 'Electric Bill', amount: 125.00, category: 'Utilities', date: 'Yesterday' },
-];
+  const budgetData = useMemo(() => {
+    return budgets.map((b) => {
+      const spent = transactions.filter((t) => t.type === 'expense' && t.category === b.category).reduce((s, t) => s + t.amount, 0);
+      const pct = b.limit > 0 ? Math.round((spent / b.limit) * 100) : 0;
+      return { ...b, spent, pct };
+    });
+  }, [budgets, transactions]);
 
-function BudgetsPage() {
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  const totalBudget = budgets.reduce((sum, b) => sum + b.limit, 0);
-  const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
+  const totalBudget = budgets.reduce((s, b) => s + b.limit, 0);
+  const totalSpent = budgetData.reduce((s, b) => s + b.spent, 0);
+  const totalPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
 
   return (
-    <Box>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700 }}>
-            Budgets
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Track and manage your spending limits
+    <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+      <Typography variant="h2" sx={{ fontWeight: 700, color: '#FFFFFF', mb: 0.5 }}>Budgets</Typography>
+      <Typography variant="body2" sx={{ color: '#666666', mb: 4 }}>Manage your spending limits</Typography>
+
+      {/* Overview */}
+      <Box sx={{ ...glassCardStatic, p: 3, mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+          <Typography variant="h5" sx={{ fontWeight: 600, color: '#FFFFFF' }}>Overview</Typography>
+          <Typography variant="caption" sx={{ color: totalPct > 100 ? '#FF4444' : '#999999', fontWeight: 600 }}>
+            {totalPct}% used
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setDialogOpen(true)}
-        >
-          Create Budget
-        </Button>
+        <LinearProgress variant="determinate" value={Math.min(totalPct, 100)}
+          sx={{ height: 4, bgcolor: 'rgba(255,255,255,0.06)', '& .MuiLinearProgress-bar': { bgcolor: totalPct > 100 ? '#FF4444' : '#FFFFFF' } }} />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+          <Typography variant="caption" sx={{ color: '#999999' }}>{formatCurrency(totalSpent)} spent</Typography>
+          <Typography variant="caption" sx={{ color: '#666666' }}>of {formatCurrency(totalBudget)}</Typography>
+        </Box>
       </Box>
 
-      {/* Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
-          <Card sx={{ bgcolor: 'primary.main', color: 'white' }}>
-            <CardContent>
-              <Typography variant="body2" sx={{ opacity: 0.8 }}>Total Budget</Typography>
-              <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                ${totalBudget.toLocaleString()}
-              </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                Monthly spending limit
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="body2" color="text.secondary">Total Spent</Typography>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'warning.main' }}>
-                ${totalSpent.toLocaleString()}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {((totalSpent / totalBudget) * 100).toFixed(0)}% of budget used
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="body2" color="text.secondary">Remaining</Typography>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
-                ${(totalBudget - totalSpent).toLocaleString()}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Available to spend
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Budget Progress Cards */}
-      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-        Category Budgets
-      </Typography>
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {budgets.map((budget) => {
-          const percentage = (budget.spent / budget.limit) * 100;
-          const isOverBudget = percentage > 100;
-          const isNearLimit = percentage > 80 && percentage <= 100;
-
-          return (
-            <Grid item xs={12} sm={6} md={4} key={budget.id}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Avatar sx={{ bgcolor: `${budget.color}15`, fontSize: '1.5rem' }}>
-                        {budget.icon}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          {budget.category}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          ${budget.spent} / ${budget.limit}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <IconButton size="small">
-                      <MoreIcon />
-                    </IconButton>
-                  </Box>
-
-                  <Box sx={{ mb: 1 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={Math.min(percentage, 100)}
-                      sx={{
-                        height: 10,
-                        borderRadius: 5,
-                        bgcolor: `${budget.color}20`,
-                        '& .MuiLinearProgress-bar': {
-                          bgcolor: isOverBudget ? 'error.main' : isNearLimit ? 'warning.main' : budget.color,
-                          borderRadius: 5,
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Chip
-                      label={`${percentage.toFixed(0)}%`}
-                      size="small"
-                      sx={{
-                        bgcolor: isOverBudget ? 'error.main' : isNearLimit ? 'warning.main' : budget.color,
-                        color: 'white',
-                        fontWeight: 600,
-                      }}
-                    />
-                    {isOverBudget ? (
-                      <Chip
-                        icon={<WarningIcon sx={{ fontSize: 14 }} />}
-                        label="Over budget!"
-                        size="small"
-                        color="error"
-                        variant="outlined"
-                      />
-                    ) : isNearLimit ? (
-                      <Chip
-                        label="Near limit"
-                        size="small"
-                        color="warning"
-                        variant="outlined"
-                      />
-                    ) : (
-                      <Chip
-                        icon={<TrendingUpIcon sx={{ fontSize: 14 }} />}
-                        label="On track"
-                        size="small"
-                        color="success"
-                        variant="outlined"
-                      />
-                    )}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          );
-        })}
-      </Grid>
-
-      {/* Recent Spending */}
-      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-        Recent Spending
-      </Typography>
-      <Card>
-        {recentTransactions.map((transaction, index) => (
-          <Box key={transaction.id}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ bgcolor: 'rgba(71, 85, 105, 0.1)', fontSize: '1rem' }}>
-                  💳
-                </Avatar>
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {transaction.description}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {transaction.category} • {transaction.date}
+      {/* Category budgets */}
+      <Grid container spacing={2}>
+        {budgetData.map((b, i) => (
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
+            <Box sx={{ ...glassCardStatic, p: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Typography variant="body1" sx={{ fontWeight: 600, color: '#FFFFFF' }}>{b.category}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  {b.pct > 100 && <WarnIcon sx={{ fontSize: 14, color: '#FF4444' }} />}
+                  <Typography variant="caption" sx={{ color: b.pct > 100 ? '#FF4444' : '#999999', fontWeight: 600 }}>
+                    {b.pct}%
                   </Typography>
                 </Box>
               </Box>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main' }}>
-                -${transaction.amount.toFixed(2)}
+              <Typography variant="caption" sx={{ color: '#666666', mb: 1.5, display: 'block' }}>
+                {formatCurrency(b.spent)} / {formatCurrency(b.limit)}
+              </Typography>
+              <LinearProgress variant="determinate" value={Math.min(b.pct, 100)}
+                sx={{ height: 3, bgcolor: 'rgba(255,255,255,0.06)', '& .MuiLinearProgress-bar': { bgcolor: b.pct > 100 ? '#FF4444' : '#FFFFFF' } }} />
+              <Typography variant="caption" sx={{ color: '#666666', mt: 1, display: 'block' }}>
+                {b.pct > 100 ? `Over budget by ${formatCurrency(b.spent - b.limit)}` : `${formatCurrency(b.limit - b.spent)} remaining`}
               </Typography>
             </Box>
-            {index < recentTransactions.length - 1 && <Divider />}
-          </Box>
-        ))}
-      </Card>
-
-      {/* Add Budget Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create New Budget</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select label="Category">
-                  <MenuItem value="food">Food & Dining</MenuItem>
-                  <MenuItem value="transport">Transportation</MenuItem>
-                  <MenuItem value="entertainment">Entertainment</MenuItem>
-                  <MenuItem value="shopping">Shopping</MenuItem>
-                  <MenuItem value="utilities">Utilities</MenuItem>
-                  <MenuItem value="healthcare">Healthcare</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Budget Limit"
-                type="number"
-                InputProps={{ startAdornment: <Typography sx={{ mr: 1 }}>$</Typography> }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Period</InputLabel>
-                <Select label="Period" defaultValue="monthly">
-                  <MenuItem value="weekly">Weekly</MenuItem>
-                  <MenuItem value="monthly">Monthly</MenuItem>
-                  <MenuItem value="yearly">Yearly</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
           </Grid>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={() => setDialogOpen(false)}>Create Budget</Button>
-        </DialogActions>
-      </Dialog>
+        ))}
+      </Grid>
     </Box>
   );
 }
-
-export default BudgetsPage;
-
