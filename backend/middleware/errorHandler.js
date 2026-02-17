@@ -1,13 +1,15 @@
 /**
  * Error Handler Middleware
  * 
- * Centralized error handling for the API.
+ * Centralized error handling with custom AppError class.
+ * Handles MongoDB-specific errors, JWT errors, validation errors,
+ * session/transaction errors, and rate limit errors.
  */
 
 /**
- * Custom Error class
+ * Custom application error class
  */
-export class AppError extends Error {
+class AppError extends Error {
   constructor(message, statusCode) {
     super(message);
     this.statusCode = statusCode;
@@ -19,115 +21,123 @@ export class AppError extends Error {
 }
 
 /**
- * Cast error handler (invalid MongoDB ObjectId)
+ * Handle MongoDB Cast Error (invalid ObjectId)
  */
-const handleCastErrorDB = (err) => {
+const handleCastError = (err) => {
   const message = `Invalid ${err.path}: ${err.value}`;
   return new AppError(message, 400);
 };
 
 /**
- * Duplicate key error handler
+ * Handle MongoDB Duplicate Key Error
  */
-const handleDuplicateKeyDB = (err) => {
-  // Extract the field name from the error
-  const field = Object.keys(err.keyValue)[0];
-  const message = `Duplicate value for ${field}. Please use another value.`;
+const handleDuplicateKeyError = (err) => {
+  const field = Object.keys(err.keyValue || {})[0];
+  const value = err.keyValue?.[field];
+  const message = field
+    ? `Duplicate value for "${field}": "${value}". Please use a different value.`
+    : 'Duplicate field value. Please use a different value.';
   return new AppError(message, 400);
 };
 
 /**
- * Validation error handler
+ * Handle Mongoose Validation Error
  */
-const handleValidationErrorDB = (err) => {
-  const errors = Object.values(err.errors).map(el => el.message);
-  const message = `Invalid input data. ${errors.join('. ')}`;
+const handleValidationError = (err) => {
+  const errors = Object.values(err.errors).map(e => e.message);
+  const message = `Validation failed: ${errors.join('. ')}`;
   return new AppError(message, 400);
 };
 
 /**
- * JWT error handler
+ * Handle JWT Invalid Token Error
  */
-const handleJWTError = () => 
-  new AppError('Invalid token. Please log in again.', 401);
+const handleJWTError = () => {
+  return new AppError('Invalid token. Please log in again.', 401);
+};
 
 /**
- * JWT expired error handler
+ * Handle JWT Expired Token Error
  */
-const handleJWTExpiredError = () => 
-  new AppError('Your token has expired. Please log in again.', 401);
+const handleJWTExpiredError = () => {
+  return new AppError('Token has expired. Please log in again.', 401);
+};
 
 /**
- * Send error in development
+ * Handle MongoDB Transaction/Session Errors
+ */
+const handleTransactionError = (err) => {
+  return new AppError('Database transaction failed. Please try again.', 500);
+};
+
+/**
+ * Send error response in development
  */
 const sendErrorDev = (err, res) => {
-  res.status(err.statusCode).json({
+  res.status(err.statusCode || 500).json({
     success: false,
-    error: err,
+    status: err.status || 'error',
     message: err.message,
+    error: err,
     stack: err.stack
   });
 };
 
 /**
- * Send error in production
+ * Send error response in production
  */
 const sendErrorProd = (err, res) => {
-  // Operational error: send message to client
+  // Operational errors: send message to client
   if (err.isOperational) {
     res.status(err.statusCode).json({
       success: false,
+      status: err.status,
       message: err.message
     });
   } else {
-    // Programming or unknown error: don't leak error details
-    console.error('ERROR 💥', err);
-
+    // Programming/unknown errors: don't leak details
+    console.error('ERROR 💥:', err);
     res.status(500).json({
       success: false,
+      status: 'error',
       message: 'Something went wrong'
     });
   }
 };
 
 /**
- * Main error handling middleware
+ * Global error handler middleware
  */
 const errorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
-  err.message = err.message || 'Internal Server Error';
+  err.status = err.status || 'error';
 
-  // Log error for debugging
-  console.error(`[ERROR] ${err.statusCode} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
-
-  // Handle specific error types
-  if (err.name === 'CastError') {
-    err = handleCastErrorDB(err);
-  }
-  
-  if (err.code === 11000) {
-    err = handleDuplicateKeyDB(err);
-  }
-  
-  if (err.name === 'ValidationError') {
-    err = handleValidationErrorDB(err);
-  }
-  
-  if (err.name === 'JsonWebTokenError') {
-    err = handleJWTError();
-  }
-  
-  if (err.name === 'TokenExpiredError') {
-    err = handleJWTExpiredError();
-  }
-
-  // Send error response
   if (process.env.NODE_ENV === 'development') {
     sendErrorDev(err, res);
   } else {
-    sendErrorProd(err, res);
+    let error = { ...err, message: err.message, name: err.name };
+
+    // MongoDB Cast Error
+    if (err.name === 'CastError') error = handleCastError(err);
+
+    // MongoDB Duplicate Key
+    if (err.code === 11000) error = handleDuplicateKeyError(err);
+
+    // Mongoose Validation Error
+    if (err.name === 'ValidationError') error = handleValidationError(err);
+
+    // JWT Errors
+    if (err.name === 'JsonWebTokenError') error = handleJWTError();
+    if (err.name === 'TokenExpiredError') error = handleJWTExpiredError();
+
+    // MongoDB Transaction Errors
+    if (err.message?.includes('Transaction') || err.message?.includes('session')) {
+      error = handleTransactionError(err);
+    }
+
+    sendErrorProd(error, res);
   }
 };
 
+export { AppError };
 export default errorHandler;
-

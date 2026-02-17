@@ -24,6 +24,7 @@ import budgetRoutes from './routes/budgets.js';
 import goalRoutes from './routes/goals.js';
 import userRoutes from './routes/users.js';
 import reportRoutes from './routes/reports.js';
+import accountRoutes from './routes/accounts.js';
 
 // Import error handling middleware
 import errorHandler from './middleware/errorHandler.js';
@@ -62,6 +63,20 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/', limiter);
+
+// Stricter rate limit for auth routes (brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Max 10 attempts per window
+  message: {
+    success: false,
+    message: 'Too many authentication attempts. Please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 // ========================================================================
 // BODY PARSING & LOGGING
@@ -102,6 +117,7 @@ app.use('/api/budgets', budgetRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/accounts', accountRoutes);
 
 // ========================================================================
 // STATIC FILE SERVING (for uploaded receipts)
@@ -126,14 +142,14 @@ app.use(errorHandler);
 const connectDB = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/expense-tracker';
-    
+
     await mongoose.connect(mongoURI);
     console.log('✅ MongoDB Connected Successfully');
-    
+
     // Log database connection info
     const dbName = mongoose.connection.db.databaseName;
     console.log(`📦 Database: ${dbName}`);
-    
+
   } catch (error) {
     console.error('❌ MongoDB Connection Error:', error.message);
     process.exit(1);
@@ -154,13 +170,14 @@ if (process.env.NODE_ENV !== 'test') {
 ║   🔗 API Base: http://localhost:${PORT}/api                  ║
 ║                                                            ║
 ║   Endpoints:                                               ║
-║   • Auth:       /api/auth                                  ║
+║   • Auth:         /api/auth                                ║
 ║   • Transactions: /api/transactions                        ║
-║   • Categories: /api/categories                            ║
-║   • Budgets:     /api/budgets                               ║
-║   • Goals:       /api/goals                                 ║
-║   • Users:       /api/users                                 ║
-║   • Reports:     /api/reports                               ║
+║   • Categories:   /api/categories                          ║
+║   • Budgets:      /api/budgets                             ║
+║   • Goals:        /api/goals                               ║
+║   • Users:        /api/users                               ║
+║   • Reports:      /api/reports                             ║
+║   • Accounts:     /api/accounts                            ║
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
       `);

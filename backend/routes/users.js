@@ -1,15 +1,22 @@
 /**
  * User Routes
  * 
- * User management endpoints.
+ * Profile management, account deletion, data export,
+ * and admin endpoints.
  */
 
 import express from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Transaction from '../models/Transaction.js';
+import Category from '../models/Category.js';
 import Budget from '../models/Budget.js';
-import Goal from '../models/Goal.js';
+import Goal, { Contribution } from '../models/Goal.js';
+import Account from '../models/Account.js';
 import { protect, authorize } from '../middleware/auth.js';
+import asyncHandler from '../middleware/asyncHandler.js';
+import validate from '../middleware/validate.js';
+import { param } from 'express-validator';
 
 const router = express.Router();
 
@@ -17,238 +24,209 @@ router.use(protect);
 
 /**
  * @route   GET /api/users/profile
- * @desc    Get current user profile
+ * @desc    Get full user profile with account summary
  * @access  Private
  */
-router.get('/profile', async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    
-    // Get user statistics
-    const [transactionCount, totalIncome, totalExpenses] = await Promise.all([
-      Transaction.countDocuments({ user: req.user._id }),
-      Transaction.aggregate([
-        { $match: { user: req.user._id, type: 'income' } },
-        { $group: { _id: null, total: { $sum: '$amount' } } }
-      ]),
-      Transaction.aggregate([
-        { $match: { user: req.user._id, type: 'expense' } },
-        { $group: { _id: null, total: { $sum: '$amount' } } }
-      ])
-    ]);
+router.get('/profile', asyncHandler(async (req, res) => {
+  const [user, accounts, totalBalance] = await Promise.all([
+    User.findById(req.user._id),
+    Account.getActiveAccounts(req.user._id),
+    Account.getTotalBalance(req.user._id)
+  ]);
 
-    res.json({
-      success: true,
-      data: {
-        user: user.toPublicJSON(),
-        stats: {
-          totalTransactions: transactionCount,
-          totalIncome: totalIncome[0]?.total || 0,
-          totalExpenses: totalExpenses[0]?.total || 0,
-          memberSince: user.createdAt
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Get profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching profile'
-    });
-  }
-});
-
-/**
- * @route   PUT /api/users/profile
- * @desc    Update user profile
- * @access  Private
- */
-router.put('/profile', async (req, res) => {
-  try {
-    const allowedUpdates = ['name', 'currency', 'language', 'timezone'];
-    const updates = {};
-    
-    allowedUpdates.forEach(field => {
-      if (req.body[field] !== undefined) {
-        updates[field] = req.body[field];
-      }
-    });
-
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      updates,
-      { new: true, runValidators: true }
-    );
-
-    res.json({
-      success: true,
-      data: user.toPublicJSON()
-    });
-  } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating profile'
-    });
-  }
-});
+  res.json({
+    success: true,
+    data: {
+      user: user.toPublicJSON(),
+      accounts,
+      totalBalance
+    }
+  });
+}));
 
 /**
  * @route   DELETE /api/users/account
- * @desc    Delete user account (soft delete)
+ * @desc    Soft delete user account
  * @access  Private
  */
-router.delete('/account', async (req, res) => {
-  try {
-    // Soft delete - mark as deleted
-    await User.findByIdAndUpdate(req.user._id, {
-      deletedAt: new Date(),
-      isActive: false,
-      email: `deleted_${Date.now()}@deleted.com` // Prevent email reuse
-    });
+router.delete('/account', asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(req.user._id, {
+    deletedAt: new Date(),
+    isActive: false,
+    $unset: { refreshToken: 1 }
+  });
 
-    res.json({
-      success: true,
-      message: 'Account deleted successfully'
-    });
-  } catch (error) {
-    console.error('Delete account error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error deleting account'
-    });
-  }
-});
+  res.json({
+    success: true,
+    message: 'Account has been deactivated. Your data will be permanently deleted after 30 days.'
+  });
+}));
 
 /**
- * @route   GET /api/users/export-data
- * @desc    Export all user data
+ * @route   GET /api/users/export
+ * @desc    Export all user data as JSON
  * @access  Private
  */
-router.get('/export-data', async (req, res) => {
-  try {
-    const [user, transactions, budgets, goals] = await Promise.all([
-      User.findById(req.user._id),
-      Transaction.find({ user: req.user._id }).lean(),
-      Budget.find({ user: req.user._id }).lean(),
-      Goal.find({ user: req.user._id }).lean()
-    ]);
+router.get('/export', asyncHandler(async (req, res) => {
+  const userId = req.user._id;
 
-    const exportData = {
-      exportDate: new Date().toISOString(),
-      user: {
-        name: user.name,
-        email: user.email,
-        currency: user.currency,
-        language: user.language,
-        timezone: user.timezone,
-        createdAt: user.createdAt
-      },
-      transactions,
-      budgets,
-      goals
-    };
+  const [user, transactions, categories, budgets, goals, contributions, accounts] = await Promise.all([
+    User.findById(userId),
+    Transaction.find({ user: userId }).populate('category', 'name').lean(),
+    Category.find({ user: userId }).lean(),
+    Budget.find({ user: userId }).lean(),
+    Goal.find({ user: userId }).lean(),
+    Contribution.find({ user: userId }).lean(),
+    Account.find({ user: userId }).lean()
+  ]);
 
-    res.json({
-      success: true,
-      data: exportData
-    });
-  } catch (error) {
-    console.error('Export data error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error exporting data'
-    });
-  }
-});
+  const exportData = {
+    exportDate: new Date().toISOString(),
+    user: user.toPublicJSON(),
+    accounts,
+    categories,
+    transactions,
+    budgets,
+    goals,
+    contributions
+  };
 
-// Admin-only routes
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename=expense_data_${Date.now()}.json`);
+  res.json(exportData);
+}));
+
+// ========================================================================
+// ADMIN ROUTES
+// ========================================================================
 
 /**
  * @route   GET /api/users
- * @desc    Get all users (Admin only)
+ * @desc    Get all users (admin only)
  * @access  Private/Admin
  */
-router.get('/', authorize('admin'), async (req, res) => {
-  try {
-    const { page = 1, limit = 20, active } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+router.get('/', authorize('admin'), asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20 } = req.query;
+  const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const query = { deletedAt: null };
-    if (active !== undefined) query.isActive = active === 'true';
+  const [users, total] = await Promise.all([
+    User.find({ deletedAt: null })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean(),
+    User.countDocuments({ deletedAt: null })
+  ]);
 
-    const [users, total] = await Promise.all([
-      User.find(query)
-        .select('-password')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parseInt(limit)),
-      User.countDocuments(query)
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        users,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total,
-          pages: Math.ceil(total / parseInt(limit))
-        }
+  res.json({
+    success: true,
+    data: {
+      users: users.map(u => ({
+        id: u._id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        isActive: u.isActive,
+        lastLogin: u.lastLogin,
+        createdAt: u.createdAt
+      })),
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
       }
-    });
-  } catch (error) {
-    console.error('Get users error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching users'
-    });
-  }
-});
+    }
+  });
+}));
 
 /**
  * @route   GET /api/users/stats
- * @desc    Get system statistics (Admin only)
+ * @desc    Platform stats (admin only) — using aggregation
  * @access  Private/Admin
  */
-router.get('/stats', authorize('admin'), async (req, res) => {
-  try {
-    const [
-      totalUsers,
-      activeUsers,
-      totalTransactions,
-      todayTransactions
-    ] = await Promise.all([
-      User.countDocuments({ deletedAt: null }),
-      User.countDocuments({ isActive: true, deletedAt: null }),
-      Transaction.countDocuments(),
-      Transaction.countDocuments({
-        date: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
-      })
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        users: {
-          total: totalUsers,
-          active: activeUsers
-        },
-        transactions: {
-          total: totalTransactions,
-          today: todayTransactions
+router.get('/stats', authorize('admin'), asyncHandler(async (req, res) => {
+  const [userStats, transactionStats] = await Promise.all([
+    User.aggregate([
+      { $match: { deletedAt: null } },
+      {
+        $facet: {
+          total: [{ $count: 'count' }],
+          active: [
+            { $match: { isActive: true } },
+            { $count: 'count' }
+          ],
+          newThisMonth: [
+            {
+              $match: {
+                createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
+              }
+            },
+            { $count: 'count' }
+          ]
         }
       }
-    });
-  } catch (error) {
-    console.error('Get stats error:', error);
-    res.status(500).json({
+    ]),
+    Transaction.aggregate([
+      {
+        $facet: {
+          total: [{ $count: 'count' }],
+          typeBreakdown: [
+            { $group: { _id: '$type', total: { $sum: '$amount' }, count: { $sum: 1 } } }
+          ]
+        }
+      }
+    ])
+  ]);
+
+  res.json({
+    success: true,
+    data: {
+      users: {
+        total: userStats[0]?.total[0]?.count || 0,
+        active: userStats[0]?.active[0]?.count || 0,
+        newThisMonth: userStats[0]?.newThisMonth[0]?.count || 0
+      },
+      transactions: {
+        total: transactionStats[0]?.total[0]?.count || 0,
+        typeBreakdown: transactionStats[0]?.typeBreakdown || []
+      }
+    }
+  });
+}));
+
+/**
+ * @route   DELETE /api/users/:id
+ * @desc    Admin delete user
+ * @access  Private/Admin
+ */
+router.delete('/:id', authorize('admin'), [
+  param('id').isMongoId(),
+  validate
+], asyncHandler(async (req, res) => {
+  if (req.params.id === req.user._id.toString()) {
+    return res.status(400).json({
       success: false,
-      message: 'Error fetching statistics'
+      message: 'Cannot delete your own account via admin endpoint'
     });
   }
-});
+
+  const user = await User.findByIdAndUpdate(req.params.id, {
+    deletedAt: new Date(),
+    isActive: false
+  });
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  res.json({
+    success: true,
+    message: 'User account deactivated'
+  });
+}));
 
 export default router;
-

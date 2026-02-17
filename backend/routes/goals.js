@@ -1,13 +1,17 @@
 /**
- * Goals Routes
+ * Goal Routes
  * 
- * CRUD operations for savings goals.
+ * CRUD for savings goals. Supports paginated contribution history,
+ * contributions, and withdrawals via the separate Contribution collection.
  */
 
 import express from 'express';
-import Goal from '../models/Goal.js';
+import mongoose from 'mongoose';
+import Goal, { Contribution } from '../models/Goal.js';
 import { protect } from '../middleware/auth.js';
-import { body, validationResult } from 'express-validator';
+import asyncHandler from '../middleware/asyncHandler.js';
+import validate from '../middleware/validate.js';
+import { body, param, query as queryValidator } from 'express-validator';
 
 const router = express.Router();
 
@@ -15,94 +19,145 @@ router.use(protect);
 
 /**
  * @route   GET /api/goals
- * @desc    Get all goals
+ * @desc    Get all goals with summary
  * @access  Private
  */
-router.get('/', async (req, res) => {
-  try {
-    const { status, featured } = req.query;
-    
-    let query = { user: req.user._id };
-    if (status) query.status = status;
-    if (featured === 'true') query.isFeatured = true;
+router.get('/', [
+  queryValidator('status').optional().isIn(['active', 'completed', 'paused', 'cancelled']),
+  queryValidator('priority').optional().isIn(['high', 'medium', 'low']),
+  queryValidator('sortBy').optional().isIn(['createdAt', 'targetDate', 'priority', 'progressPercentage']),
+  validate
+], asyncHandler(async (req, res) => {
+  const { status, priority, sortBy = 'createdAt' } = req.query;
 
-    const goals = await Goal.find(query).sort({ priority: 1, createdAt: -1 }).lean();
+  const filter = { user: req.user._id };
+  if (status) filter.status = status;
+  if (priority) filter.priority = priority;
 
-    // Calculate totals
-    const totals = await Goal.aggregate([
-      { $match: { user: req.user._id, status: 'active' } },
-      {
-        $group: {
-          _id: null,
-          totalTarget: { $sum: '$targetAmount' },
-          totalCurrent: { $sum: '$currentAmount' }
-        }
+  const sort = {};
+  sort[sortBy] = sortBy === 'targetDate' ? 1 : -1;
+
+  const goals = await Goal.find(filter).sort(sort).lean();
+
+  // Compute totals
+  const totalSavings = goals
+    .filter(g => g.status === 'active')
+    .reduce((sum, g) => sum + (g.currentAmount || 0), 0);
+
+  const totalTarget = goals
+    .filter(g => g.status === 'active')
+    .reduce((sum, g) => sum + g.targetAmount, 0);
+
+  res.json({
+    success: true,
+    data: {
+      goals: goals.map(g => ({
+        ...g,
+        progressPercentage: g.targetAmount > 0 ? Math.round((g.currentAmount / g.targetAmount) * 100) : 0,
+        remainingAmount: Math.max(0, g.targetAmount - g.currentAmount)
+      })),
+      summary: {
+        totalGoals: goals.length,
+        activeGoals: goals.filter(g => g.status === 'active').length,
+        completedGoals: goals.filter(g => g.status === 'completed').length,
+        totalSavings: Math.round(totalSavings * 100) / 100,
+        totalTarget: Math.round(totalTarget * 100) / 100,
+        overallProgress: totalTarget > 0 ? Math.round((totalSavings / totalTarget) * 100) : 0
       }
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        goals,
-        summary: {
-          totalGoals: goals.length,
-          activeGoals: goals.filter(g => g.status === 'active').length,
-          completedGoals: goals.filter(g => g.status === 'completed').length,
-          totalTarget: totals[0]?.totalTarget || 0,
-          totalSaved: totals[0]?.totalCurrent || 0
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Get goals error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching goals'
-    });
-  }
-});
+    }
+  });
+}));
 
 /**
  * @route   GET /api/goals/:id
- * @desc    Get single goal with progress
+ * @desc    Get single goal with recent contributions
  * @access  Private
  */
-router.get('/:id', async (req, res) => {
-  try {
-    const goal = await Goal.findOne({
-      _id: req.params.id,
-      user: req.user._id
-    });
+router.get('/:id', [
+  param('id').isMongoId(),
+  validate
+], asyncHandler(async (req, res) => {
+  const goal = await Goal.findOne({
+    _id: req.params.id,
+    user: req.user._id
+  });
 
-    if (!goal) {
-      return res.status(404).json({
-        success: false,
-        message: 'Goal not found'
-      });
-    }
-
-    // Calculate contribution summary
-    const contributionSummary = goal.contributions.reduce((acc, c) => {
-      const month = c.date.toISOString().slice(0, 7);
-      acc[month] = (acc[month] || 0) + c.amount;
-      return acc;
-    }, {});
-
-    res.json({
-      success: true,
-      data: {
-        ...goal.toObject(),
-        contributionSummary
-      }
-    });
-  } catch (error) {
-    console.error('Get goal error:', error);
-    res.status(500).json({
+  if (!goal) {
+    return res.status(404).json({
       success: false,
-      message: 'Error fetching goal'
+      message: 'Goal not found'
     });
   }
-});
+
+  // Get recent contributions (last 10)
+  const recentContributions = await Contribution.find({ goal: goal._id })
+    .sort({ date: -1 })
+    .limit(10)
+    .lean();
+
+  res.json({
+    success: true,
+    data: {
+      ...goal.toJSON(),
+      recentContributions
+    }
+  });
+}));
+
+/**
+ * @route   GET /api/goals/:id/contributions
+ * @desc    Get paginated contribution history
+ * @access  Private
+ */
+router.get('/:id/contributions', [
+  param('id').isMongoId(),
+  queryValidator('page').optional().isInt({ min: 1 }),
+  queryValidator('limit').optional().isInt({ min: 1, max: 100 }),
+  queryValidator('type').optional().isIn(['deposit', 'withdrawal']),
+  validate
+], asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, type } = req.query;
+
+  // Verify goal ownership
+  const goal = await Goal.findOne({
+    _id: req.params.id,
+    user: req.user._id
+  });
+
+  if (!goal) {
+    return res.status(404).json({
+      success: false,
+      message: 'Goal not found'
+    });
+  }
+
+  const filter = { goal: goal._id };
+  if (type) filter.type = type;
+
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+
+  const [contributions, total] = await Promise.all([
+    Contribution.find(filter)
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean(),
+    Contribution.countDocuments(filter)
+  ]);
+
+  res.json({
+    success: true,
+    data: {
+      contributions,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    }
+  });
+}));
 
 /**
  * @route   POST /api/goals
@@ -110,180 +165,231 @@ router.get('/:id', async (req, res) => {
  * @access  Private
  */
 router.post('/', [
-  body('name').trim().notEmpty().withMessage('Name is required'),
-  body('targetAmount').isFloat({ min: 1 }).withMessage('Target must be at least 1'),
-  body('category').optional().isIn(['emergency', 'vacation', 'purchase', 'investment', 'education', 'home', 'car', 'wedding', 'retirement', 'other']),
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
+  body('name').trim().notEmpty().withMessage('Goal name is required'),
+  body('targetAmount').isFloat({ min: 1 }).withMessage('Target amount must be at least 1'),
+  body('category').optional().isIn([
+    'emergency', 'vacation', 'purchase', 'investment', 'education',
+    'home', 'car', 'wedding', 'retirement', 'other'
+  ]),
+  body('targetDate').optional().isISO8601(),
+  body('priority').optional().isIn(['high', 'medium', 'low']),
+  validate
+], asyncHandler(async (req, res) => {
+  const goal = await Goal.create({
+    ...req.body,
+    user: req.user._id
+  });
 
-    const {
-      name, description, targetAmount, currency, targetDate,
-      category, priority, color, icon, monthlyContribution, milestones, isFeatured
-    } = req.body;
-
-    const goal = await Goal.create({
-      user: req.user._id,
-      name,
-      description,
-      targetAmount,
-      currency: currency || 'USD',
-      targetDate,
-      category: category || 'other',
-      priority: priority || 'medium',
-      color: color || '#34C759',
-      icon: icon || '🎯',
-      monthlyContribution,
-      milestones,
-      isFeatured
-    });
-
-    res.status(201).json({
-      success: true,
-      data: goal
-    });
-  } catch (error) {
-    console.error('Create goal error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error creating goal'
-    });
-  }
-});
+  res.status(201).json({
+    success: true,
+    data: goal
+  });
+}));
 
 /**
  * @route   PUT /api/goals/:id
  * @desc    Update goal
  * @access  Private
  */
-router.put('/:id', async (req, res) => {
-  try {
-    const goal = await Goal.findOne({
-      _id: req.params.id,
-      user: req.user._id
-    });
+router.put('/:id', [
+  param('id').isMongoId(),
+  body('name').optional().trim().notEmpty(),
+  body('targetAmount').optional().isFloat({ min: 1 }),
+  body('priority').optional().isIn(['high', 'medium', 'low']),
+  body('status').optional().isIn(['active', 'completed', 'paused', 'cancelled']),
+  validate
+], asyncHandler(async (req, res) => {
+  const goal = await Goal.findOne({
+    _id: req.params.id,
+    user: req.user._id
+  });
 
-    if (!goal) {
-      return res.status(404).json({
-        success: false,
-        message: 'Goal not found'
-      });
-    }
-
-    const allowedUpdates = [
-      'name', 'description', 'targetAmount', 'targetDate',
-      'category', 'priority', 'color', 'icon', 'monthlyContribution',
-      'status', 'isFeatured'
-    ];
-
-    allowedUpdates.forEach(field => {
-      if (req.body[field] !== undefined) {
-        goal[field] = req.body[field];
-      }
-    });
-
-    await goal.save();
-
-    res.json({
-      success: true,
-      data: goal
-    });
-  } catch (error) {
-    console.error('Update goal error:', error);
-    res.status(500).json({
+  if (!goal) {
+    return res.status(404).json({
       success: false,
-      message: 'Error updating goal'
+      message: 'Goal not found'
     });
   }
-});
+
+  const allowedUpdates = [
+    'name', 'description', 'targetAmount', 'targetDate', 'category',
+    'priority', 'status', 'color', 'icon', 'monthlyContribution',
+    'autoContributeEnabled', 'isFeatured'
+  ];
+
+  allowedUpdates.forEach(field => {
+    if (req.body[field] !== undefined) {
+      goal[field] = req.body[field];
+    }
+  });
+
+  // Update milestones if provided
+  if (req.body.milestones && Array.isArray(req.body.milestones)) {
+    goal.milestones = req.body.milestones;
+  }
+
+  await goal.save();
+
+  res.json({
+    success: true,
+    data: goal
+  });
+}));
 
 /**
  * @route   POST /api/goals/:id/contribute
- * @desc    Add contribution to goal
+ * @desc    Add contribution (deposit) to goal
  * @access  Private
  */
 router.post('/:id/contribute', [
-  body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be positive'),
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
+  param('id').isMongoId(),
+  body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be greater than 0'),
+  body('note').optional().trim().isLength({ max: 200 }),
+  validate
+], asyncHandler(async (req, res) => {
+  const { amount, note } = req.body;
 
-    const goal = await Goal.findOne({
-      _id: req.params.id,
-      user: req.user._id
-    });
+  const goal = await Goal.findOne({
+    _id: req.params.id,
+    user: req.user._id
+  });
 
-    if (!goal) {
-      return res.status(404).json({
-        success: false,
-        message: 'Goal not found'
-      });
-    }
-
-    const { amount, note } = req.body;
-
-    goal.contributions.push({
-      amount,
-      date: new Date(),
-      note
-    });
-
-    await goal.save();
-
-    res.json({
-      success: true,
-      data: {
-        ...goal.toObject(),
-        contributionAmount: amount,
-        isCompleted: goal.currentAmount >= goal.targetAmount
-      }
-    });
-  } catch (error) {
-    console.error('Add contribution error:', error);
-    res.status(500).json({
+  if (!goal) {
+    return res.status(404).json({
       success: false,
-      message: 'Error adding contribution'
+      message: 'Goal not found'
     });
   }
-});
+
+  if (goal.status !== 'active') {
+    return res.status(400).json({
+      success: false,
+      message: 'Cannot contribute to a non-active goal'
+    });
+  }
+
+  const updatedGoal = await goal.addContribution(parseFloat(amount), 'deposit', note);
+
+  res.json({
+    success: true,
+    data: updatedGoal,
+    message: goal.isCompleted ? 'Goal completed! 🎉' : 'Contribution added'
+  });
+}));
+
+/**
+ * @route   POST /api/goals/:id/withdraw
+ * @desc    Withdraw from goal
+ * @access  Private
+ */
+router.post('/:id/withdraw', [
+  param('id').isMongoId(),
+  body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be greater than 0'),
+  body('note').optional().trim().isLength({ max: 200 }),
+  validate
+], asyncHandler(async (req, res) => {
+  const { amount, note } = req.body;
+
+  const goal = await Goal.findOne({
+    _id: req.params.id,
+    user: req.user._id
+  });
+
+  if (!goal) {
+    return res.status(404).json({
+      success: false,
+      message: 'Goal not found'
+    });
+  }
+
+  if (amount > goal.currentAmount) {
+    return res.status(400).json({
+      success: false,
+      message: 'Withdrawal amount exceeds current savings'
+    });
+  }
+
+  const updatedGoal = await goal.addContribution(parseFloat(amount), 'withdrawal', note);
+
+  res.json({
+    success: true,
+    data: updatedGoal,
+    message: 'Withdrawal processed'
+  });
+}));
 
 /**
  * @route   DELETE /api/goals/:id
- * @desc    Delete goal
+ * @desc    Delete goal and associated contributions
  * @access  Private
  */
-router.delete('/:id', async (req, res) => {
-  try {
-    const goal = await Goal.findOneAndDelete({
-      _id: req.params.id,
-      user: req.user._id
-    });
+router.delete('/:id', [
+  param('id').isMongoId(),
+  validate
+], asyncHandler(async (req, res) => {
+  const goal = await Goal.findOneAndDelete({
+    _id: req.params.id,
+    user: req.user._id
+  });
 
-    if (!goal) {
-      return res.status(404).json({
-        success: false,
-        message: 'Goal not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Goal deleted successfully'
-    });
-  } catch (error) {
-    console.error('Delete goal error:', error);
-    res.status(500).json({
+  if (!goal) {
+    return res.status(404).json({
       success: false,
-      message: 'Error deleting goal'
+      message: 'Goal not found'
     });
   }
-});
+
+  // Clean up contributions
+  await Contribution.deleteMany({ goal: goal._id });
+
+  res.json({
+    success: true,
+    message: 'Goal and contributions deleted'
+  });
+}));
+
+/**
+ * @route   DELETE /api/goals/:id/contributions/:contributionId
+ * @desc    Delete a specific contribution
+ * @access  Private
+ */
+router.delete('/:id/contributions/:contributionId', [
+  param('id').isMongoId(),
+  param('contributionId').isMongoId(),
+  validate
+], asyncHandler(async (req, res) => {
+  const goal = await Goal.findOne({
+    _id: req.params.id,
+    user: req.user._id
+  });
+
+  if (!goal) {
+    return res.status(404).json({
+      success: false,
+      message: 'Goal not found'
+    });
+  }
+
+  const contribution = await Contribution.findOneAndDelete({
+    _id: req.params.contributionId,
+    goal: goal._id
+  });
+
+  if (!contribution) {
+    return res.status(404).json({
+      success: false,
+      message: 'Contribution not found'
+    });
+  }
+
+  // Recalculate totals
+  await goal.recalculateAmount();
+
+  res.json({
+    success: true,
+    data: goal,
+    message: 'Contribution removed'
+  });
+}));
 
 export default router;
-
