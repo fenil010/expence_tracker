@@ -1,115 +1,194 @@
 import { useState } from 'react';
-import {
-  Box, Typography, List, ListItemButton, ListItemIcon, ListItemText,
-  Divider, TextField, Switch, Select, MenuItem, FormControl, InputLabel, Grid,
-} from '@mui/material';
-import {
-  Person as ProfileIcon, Notifications as NotifIcon,
-  Security as SecurityIcon, Palette as ThemeIcon,
-  CreditCard as PaymentIcon,
-} from '@mui/icons-material';
-import { tokens, glassCardStatic } from '../theme';
-
-const sections = [
-  { label: 'Profile', icon: <ProfileIcon /> },
-  { label: 'Notifications', icon: <NotifIcon /> },
-  { label: 'Security', icon: <SecurityIcon /> },
-  { label: 'Appearance', icon: <ThemeIcon /> },
-  { label: 'Billing', icon: <PaymentIcon /> },
-];
+import { motion } from 'framer-motion';
+import { User, Bell, Shield, Palette, Trash2 } from 'lucide-react';
+import { PageWrapper, Card, Button, Input, Toggle } from '../components/ui';
+import { toast } from '../components/ui/Toast';
+import { useAuth } from '../context/AuthContext';
+import { authApi } from '../services/api';
 
 export default function SettingsPage() {
-  const [active, setActive] = useState(0);
+  const { user, updateProfile, logout } = useAuth();
+  const [notifications, setNotifications] = useState(true);
+  const [currencyFormat, setCurrencyFormat] = useState('USD');
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast('Passwords do not match', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      await authApi.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      toast('Password updated', 'success');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      toast(err.message || 'Failed to change password', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Are you sure? This action is permanent and cannot be undone.')) return;
+    try {
+      await authApi.updateProfile({ deleted: true });
+      logout();
+    } catch (err) {
+      toast('Failed to delete account', 'error');
+    }
+  };
+
+  const sections = [
+    { icon: User, label: 'Account' },
+    { icon: Bell, label: 'Notifications' },
+    { icon: Shield, label: 'Security' },
+    { icon: Palette, label: 'Preferences' },
+  ];
 
   return (
-    <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
-      <Typography variant="h2" sx={{ fontWeight: 700, color: '#FFFFFF', mb: 0.5 }}>Settings</Typography>
-      <Typography variant="body2" sx={{ color: '#666666', mb: 4 }}>Manage your preferences</Typography>
+    <PageWrapper title="Settings" subtitle="Manage your account preferences">
+      <div className="max-w-2xl space-y-8">
+        {/* Profile Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <Card>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-lg bg-sand/60 flex items-center justify-center">
+                <User className="w-4 h-4 text-char" />
+              </div>
+              <h3 className="text-base font-semibold text-obsidian">Account</h3>
+            </div>
 
-      <Grid container spacing={2}>
-        {/* Sidebar */}
-        <Grid size={{ xs: 12, md: 3 }}>
-          <Box sx={{ ...glassCardStatic }}>
-            <List disablePadding>
-              {sections.map((s, i) => (
-                <ListItemButton key={i} selected={active === i} onClick={() => setActive(i)}
-                  sx={{ borderLeft: active === i ? '2px solid #FFFFFF' : '2px solid transparent' }}>
-                  <ListItemIcon sx={{ minWidth: 36, color: active === i ? '#FFFFFF' : '#666666' }}>{s.icon}</ListItemIcon>
-                  <ListItemText primary={s.label} primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: active === i ? 600 : 400 }} />
-                </ListItemButton>
-              ))}
-            </List>
-          </Box>
-        </Grid>
+            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-stone/20">
+              <div className="w-14 h-14 rounded-2xl bg-sand flex items-center justify-center">
+                <span className="text-xl font-semibold text-obsidian">
+                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </span>
+              </div>
+              <div>
+                <p className="text-lg font-semibold text-obsidian">{user?.name || 'User'}</p>
+                <p className="text-sm text-drift">{user?.email || ''}</p>
+              </div>
+            </div>
 
-        {/* Content */}
-        <Grid size={{ xs: 12, md: 9 }}>
-          <Box sx={{ ...glassCardStatic, p: 3 }}>
-            <Typography variant="h5" sx={{ fontWeight: 600, color: '#FFFFFF', mb: 3 }}>{sections[active].label}</Typography>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input label="Name" value={user?.name || ''} readOnly />
+              <Input label="Email" value={user?.email || ''} readOnly />
+            </div>
+          </Card>
+        </motion.div>
 
-            {active === 0 && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <TextField fullWidth label="Full Name" defaultValue="John Doe" />
-                <TextField fullWidth label="Email" defaultValue="john@example.com" />
-                <FormControl fullWidth>
-                  <InputLabel>Currency</InputLabel>
-                  <Select defaultValue="USD" label="Currency">
-                    <MenuItem value="USD">USD ($)</MenuItem>
-                    <MenuItem value="EUR">EUR (€)</MenuItem>
-                    <MenuItem value="GBP">GBP (£)</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-            )}
+        {/* Notifications */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <Card>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-lg bg-sand/60 flex items-center justify-center">
+                <Bell className="w-4 h-4 text-char" />
+              </div>
+              <h3 className="text-base font-semibold text-obsidian">Notifications</h3>
+            </div>
 
-            {active === 1 && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {['Email notifications', 'Push notifications', 'Budget alerts', 'Weekly summary'].map((label, i) => (
-                  <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1, borderBottom: `1px solid ${tokens.borderDark}` }}>
-                    <Typography variant="body2" sx={{ color: '#FFFFFF' }}>{label}</Typography>
-                    <Switch defaultChecked={i < 2} />
-                  </Box>
-                ))}
-              </Box>
-            )}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-char">Budget Alerts</p>
+                  <p className="text-xs text-drift">Get notified when close to budget limit</p>
+                </div>
+                <Toggle checked={notifications} onChange={setNotifications} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-char">Weekly Summary</p>
+                  <p className="text-xs text-drift">Receive weekly spending report</p>
+                </div>
+                <Toggle checked={false} onChange={() => {}} />
+              </div>
+            </div>
+          </Card>
+        </motion.div>
 
-            {active === 2 && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <TextField fullWidth label="Current Password" type="password" />
-                <TextField fullWidth label="New Password" type="password" />
-                <TextField fullWidth label="Confirm Password" type="password" />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1 }}>
-                  <Typography variant="body2" sx={{ color: '#FFFFFF' }}>Two-factor authentication</Typography>
-                  <Switch />
-                </Box>
-              </Box>
-            )}
+        {/* Security */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <Card>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-lg bg-sand/60 flex items-center justify-center">
+                <Shield className="w-4 h-4 text-char" />
+              </div>
+              <h3 className="text-base font-semibold text-obsidian">Security</h3>
+            </div>
 
-            {active === 3 && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1, borderBottom: `1px solid ${tokens.borderDark}` }}>
-                  <Typography variant="body2" sx={{ color: '#FFFFFF' }}>Dark mode</Typography>
-                  <Switch defaultChecked />
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1, borderBottom: `1px solid ${tokens.borderDark}` }}>
-                  <Typography variant="body2" sx={{ color: '#FFFFFF' }}>Compact view</Typography>
-                  <Switch />
-                </Box>
-              </Box>
-            )}
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <Input
+                label="Current Password"
+                type="password"
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))}
+                required
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="New Password"
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))}
+                  required
+                />
+                <Input
+                  label="Confirm Password"
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))}
+                  required
+                />
+              </div>
+              <Button type="submit" loading={saving}>Update Password</Button>
+            </form>
+          </Card>
+        </motion.div>
 
-            {active === 4 && (
-              <Box>
-                <Typography variant="body2" sx={{ color: '#999999', mb: 2 }}>Manage your subscription and payment methods.</Typography>
-                <Box sx={{ p: 2, border: `1px solid ${tokens.borderDark}`, mb: 2 }}>
-                  <Typography variant="body2" sx={{ color: '#FFFFFF', fontWeight: 600 }}>Free Plan</Typography>
-                  <Typography variant="caption" sx={{ color: '#666666' }}>Basic features included</Typography>
-                </Box>
-              </Box>
-            )}
-          </Box>
-        </Grid>
-      </Grid>
-    </Box>
+        {/* Danger Zone */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
+          <Card className="border-red-200/30">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-red-50/40 flex items-center justify-center">
+                <Trash2 className="w-4 h-4 text-red-700/50" />
+              </div>
+              <h3 className="text-base font-semibold text-obsidian">Danger Zone</h3>
+            </div>
+            <p className="text-sm text-drift mb-4">
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+            <Button variant="danger" onClick={handleDeleteAccount}>
+              Delete Account
+            </Button>
+          </Card>
+        </motion.div>
+      </div>
+    </PageWrapper>
   );
 }

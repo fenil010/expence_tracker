@@ -1,74 +1,196 @@
-import { useMemo } from 'react';
-import { Box, Typography, LinearProgress, Grid } from '@mui/material';
-import { Warning as WarnIcon } from '@mui/icons-material';
-import { useExpenseData } from '../hooks/useExpenseData';
-import { formatCurrency } from '../utils/helpers';
-import { tokens, glassCardStatic } from '../theme';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Trash2, Pencil } from 'lucide-react';
+import { PageWrapper, Card, Button, Modal, Input, Select, Badge } from '../components/ui';
+import { CardSkeleton } from '../components/ui/Skeleton';
+import { toast } from '../components/ui/Toast';
+import { budgetApi, categoryApi } from '../services/api';
 
 export default function BudgetsPage() {
-  const { data } = useExpenseData();
-  const budgets = data?.budgets || [];
-  const transactions = data?.transactions || [];
+  const [budgets, setBudgets] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ category: '', amount: '', period: 'monthly' });
+  const [saving, setSaving] = useState(false);
 
-  const budgetData = useMemo(() => {
-    return budgets.map((b) => {
-      const spent = transactions.filter((t) => t.type === 'expense' && t.category === b.category).reduce((s, t) => s + t.amount, 0);
-      const pct = b.limit > 0 ? Math.round((spent / b.limit) * 100) : 0;
-      return { ...b, spent, pct };
-    });
-  }, [budgets, transactions]);
+  const fetchBudgets = async () => {
+    try {
+      const res = await budgetApi.getAll();
+      setBudgets(res.data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const totalBudget = budgets.reduce((s, b) => s + b.limit, 0);
-  const totalSpent = budgetData.reduce((s, b) => s + b.spent, 0);
-  const totalPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+  useEffect(() => {
+    fetchBudgets();
+    categoryApi.getAll('expense').then((res) => {
+      setCategories(Array.isArray(res.data) ? res.data : []);
+    }).catch(() => {});
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.amount) return;
+    setSaving(true);
+    try {
+      await budgetApi.create({
+        category: form.category,
+        amount: parseFloat(form.amount),
+        period: form.period,
+      });
+      toast('Budget created', 'success');
+      setShowModal(false);
+      setForm({ category: '', amount: '', period: 'monthly' });
+      fetchBudgets();
+    } catch (err) {
+      toast(err.message || 'Failed to create budget', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await budgetApi.delete(id);
+      setBudgets((prev) => prev.filter((b) => (b._id || b.id) !== id));
+      toast('Budget deleted', 'success');
+    } catch {
+      toast('Failed to delete budget', 'error');
+    }
+  };
 
   return (
-    <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
-      <Typography variant="h2" sx={{ fontWeight: 700, color: '#FFFFFF', mb: 0.5 }}>Budgets</Typography>
-      <Typography variant="body2" sx={{ color: '#666666', mb: 4 }}>Manage your spending limits</Typography>
+    <PageWrapper
+      title="Budgets"
+      subtitle="Set spending limits by category"
+      action={
+        <Button icon={Plus} onClick={() => setShowModal(true)}>
+          Add Budget
+        </Button>
+      }
+    >
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}
+        </div>
+      ) : budgets.length === 0 ? (
+        <Card className="text-center py-16">
+          <div className="w-14 h-14 rounded-2xl bg-sand/60 flex items-center justify-center mx-auto mb-4">
+            <Plus className="w-6 h-6 text-drift" />
+          </div>
+          <p className="text-drift text-sm mb-4">No budgets set yet</p>
+          <Button onClick={() => setShowModal(true)} icon={Plus}>Create Budget</Button>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <AnimatePresence>
+            {budgets.map((budget) => {
+              const spent = budget.spent || 0;
+              const limit = budget.amount || budget.limit || 0;
+              const progress = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
+              const isOver = progress >= 100;
 
-      {/* Overview */}
-      <Box sx={{ ...glassCardStatic, p: 3, mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-          <Typography variant="h5" sx={{ fontWeight: 600, color: '#FFFFFF' }}>Overview</Typography>
-          <Typography variant="caption" sx={{ color: totalPct > 100 ? '#FF4444' : '#999999', fontWeight: 600 }}>
-            {totalPct}% used
-          </Typography>
-        </Box>
-        <LinearProgress variant="determinate" value={Math.min(totalPct, 100)}
-          sx={{ height: 4, bgcolor: 'rgba(255,255,255,0.06)', '& .MuiLinearProgress-bar': { bgcolor: totalPct > 100 ? '#FF4444' : '#FFFFFF' } }} />
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-          <Typography variant="caption" sx={{ color: '#999999' }}>{formatCurrency(totalSpent)} spent</Typography>
-          <Typography variant="caption" sx={{ color: '#666666' }}>of {formatCurrency(totalBudget)}</Typography>
-        </Box>
-      </Box>
+              return (
+                <motion.div
+                  key={budget._id || budget.id}
+                  layout
+                  initial={{ opacity: 0, y: 16, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.97 }}
+                  transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  <Card className="h-full">
+                    <div className="flex items-start justify-between mb-5">
+                      <div>
+                        <h3 className="font-semibold text-obsidian">
+                          {budget.category?.name || budget.category || 'General'}
+                        </h3>
+                        <p className="text-xs text-drift mt-1 capitalize">{budget.period || 'Monthly'}</p>
+                      </div>
+                      <button
+                        onClick={() => handleDelete(budget._id || budget.id)}
+                        className="p-1.5 rounded-lg text-drift hover:text-red-700/60 hover:bg-red-50/30 transition-all duration-300 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
 
-      {/* Category budgets */}
-      <Grid container spacing={2}>
-        {budgetData.map((b, i) => (
-          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
-            <Box sx={{ ...glassCardStatic, p: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                <Typography variant="body1" sx={{ fontWeight: 600, color: '#FFFFFF' }}>{b.category}</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  {b.pct > 100 && <WarnIcon sx={{ fontSize: 14, color: '#FF4444' }} />}
-                  <Typography variant="caption" sx={{ color: b.pct > 100 ? '#FF4444' : '#999999', fontWeight: 600 }}>
-                    {b.pct}%
-                  </Typography>
-                </Box>
-              </Box>
-              <Typography variant="caption" sx={{ color: '#666666', mb: 1.5, display: 'block' }}>
-                {formatCurrency(b.spent)} / {formatCurrency(b.limit)}
-              </Typography>
-              <LinearProgress variant="determinate" value={Math.min(b.pct, 100)}
-                sx={{ height: 3, bgcolor: 'rgba(255,255,255,0.06)', '& .MuiLinearProgress-bar': { bgcolor: b.pct > 100 ? '#FF4444' : '#FFFFFF' } }} />
-              <Typography variant="caption" sx={{ color: '#666666', mt: 1, display: 'block' }}>
-                {b.pct > 100 ? `Over budget by ${formatCurrency(b.spent - b.limit)}` : `${formatCurrency(b.limit - b.spent)} remaining`}
-              </Typography>
-            </Box>
-          </Grid>
-        ))}
-      </Grid>
-    </Box>
+                    <div className="space-y-3">
+                      <div className="flex items-end justify-between">
+                        <span className="text-2xl font-semibold text-obsidian tabular-nums">
+                          ${spent.toLocaleString()}
+                        </span>
+                        <span className="text-sm text-drift tabular-nums">
+                          of ${limit.toLocaleString()}
+                        </span>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className="h-2.5 bg-sand rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progress}%` }}
+                          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.2 }}
+                          className={`h-full rounded-full ${isOver ? 'bg-red-400/60' : 'bg-obsidian'}`}
+                        />
+                      </div>
+
+                      <p className="text-xs text-drift">
+                        {isOver ? (
+                          <span className="text-red-700/60">Over budget by ${(spent - limit).toLocaleString()}</span>
+                        ) : (
+                          <span>${(limit - spent).toLocaleString()} remaining</span>
+                        )}
+                      </p>
+                    </div>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Create Budget Modal */}
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create Budget">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <Select
+            label="Category"
+            placeholder="Select category"
+            value={form.category}
+            onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+            options={categories.map((c) => ({ value: c._id || c.name, label: c.name }))}
+          />
+          <Input
+            label="Budget Amount"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="0.00"
+            value={form.amount}
+            onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
+            required
+          />
+          <Select
+            label="Period"
+            value={form.period}
+            onChange={(e) => setForm((p) => ({ ...p, period: e.target.value }))}
+            options={[
+              { value: 'weekly', label: 'Weekly' },
+              { value: 'monthly', label: 'Monthly' },
+              { value: 'yearly', label: 'Yearly' },
+            ]}
+          />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="ghost" type="button" onClick={() => setShowModal(false)}>Cancel</Button>
+            <Button type="submit" loading={saving}>Create Budget</Button>
+          </div>
+        </form>
+      </Modal>
+    </PageWrapper>
   );
 }

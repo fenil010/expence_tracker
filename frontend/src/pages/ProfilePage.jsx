@@ -1,88 +1,96 @@
 import { useState } from 'react';
-import {
-  Box, Typography, Avatar, Tabs, Tab, TextField, Grid,
-  Divider,
-} from '@mui/material';
-import { tokens, glassCardStatic } from '../theme';
-import { useExpenseData } from '../hooks/useExpenseData';
-import { formatCurrency } from '../utils/helpers';
+import { motion } from 'framer-motion';
+import { User, Mail, Calendar, Camera } from 'lucide-react';
+import { PageWrapper, Card, Button, Input } from '../components/ui';
+import { toast } from '../components/ui/Toast';
+import { useAuth } from '../context/AuthContext';
 
 export default function ProfilePage() {
-  const { data } = useExpenseData();
-  const transactions = data?.transactions || [];
-  const [tab, setTab] = useState(0);
+  const { user, updateProfile } = useAuth();
+  const [form, setForm] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+  });
+  const [saving, setSaving] = useState(false);
 
-  const totalIncome = transactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const totalExpenses = transactions.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await updateProfile(form);
+      toast('Profile updated', 'success');
+    } catch (err) {
+      toast(err.message || 'Failed to update profile', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
-      <Typography variant="h2" sx={{ fontWeight: 700, color: '#FFFFFF', mb: 4 }}>Profile</Typography>
+    <PageWrapper title="Profile" subtitle="Manage your personal information">
+      <div className="max-w-2xl space-y-8">
+        {/* Avatar */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <Card className="flex items-center gap-6">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-2xl bg-sand flex items-center justify-center">
+                <span className="text-3xl font-semibold text-obsidian">
+                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </span>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="absolute -bottom-1 -right-1 w-8 h-8 bg-obsidian rounded-lg flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity shadow-card">
+                <Camera className="w-3.5 h-3.5 text-parchment" />
+              </motion.button>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-obsidian">{user?.name || 'User'}</h2>
+              <p className="text-sm text-drift">{user?.email || ''}</p>
+              <p className="text-xs text-drift mt-1">
+                <Calendar className="w-3 h-3 inline mr-1" />
+                Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'recently'}
+              </p>
+            </div>
+          </Card>
+        </motion.div>
 
-      {/* Header card */}
-      <Box sx={{ ...glassCardStatic, p: 3, mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-          <Avatar sx={{ width: 64, height: 64, bgcolor: '#222222', color: '#FFFFFF', fontSize: '1.5rem', fontWeight: 700 }}>JD</Avatar>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: '#FFFFFF' }}>John Doe</Typography>
-            <Typography variant="body2" sx={{ color: '#666666' }}>john@example.com</Typography>
-          </Box>
-        </Box>
-
-        {/* Stats */}
-        <Grid container spacing={2} sx={{ mt: 2 }}>
-          {[
-            { label: 'Transactions', value: transactions.length },
-            { label: 'Total Income', value: formatCurrency(totalIncome) },
-            { label: 'Total Spent', value: formatCurrency(totalExpenses) },
-            { label: 'Member Since', value: 'Jan 2026' },
-          ].map((s, i) => (
-            <Grid size={{ xs: 6, md: 3 }} key={i}>
-              <Box sx={{ py: 1 }}>
-                <Typography variant="caption" sx={{ color: '#666666' }}>{s.label}</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600, color: '#FFFFFF' }}>{s.value}</Typography>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-
-      {/* Tabs */}
-      <Box sx={{ ...glassCardStatic }}>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: `1px solid ${tokens.borderDark}`, px: 2 }}>
-          <Tab label="Personal Info" />
-          <Tab label="Activity" />
-        </Tabs>
-
-        <Box sx={{ p: 3 }}>
-          {tab === 0 && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <TextField fullWidth label="Full Name" defaultValue="John Doe" />
-              <TextField fullWidth label="Email" defaultValue="john@example.com" />
-              <TextField fullWidth label="Phone" defaultValue="+1 (555) 123-4567" />
-              <TextField fullWidth label="Location" defaultValue="San Francisco, CA" />
-            </Box>
-          )}
-
-          {tab === 1 && (
-            <Box>
-              {transactions.slice(0, 8).map((t, i) => (
-                <Box key={i} sx={{ py: 1.5, borderBottom: `1px solid ${tokens.borderDark}`, display: 'flex', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="body2" sx={{ color: '#FFFFFF', fontWeight: 500 }}>{t.description}</Typography>
-                    <Typography variant="caption" sx={{ color: '#666666' }}>
-                      {new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" sx={{ color: t.type === 'income' ? '#FFFFFF' : '#FF4444', fontWeight: 600 }}>
-                    {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          )}
-        </Box>
-      </Box>
-    </Box>
+        {/* Edit Form */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <Card>
+            <h3 className="text-base font-semibold text-obsidian mb-6">Personal Information</h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Full Name"
+                icon={User}
+                value={form.name}
+                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                required
+              />
+              <Input
+                label="Email Address"
+                icon={Mail}
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                required
+              />
+              <div className="pt-2">
+                <Button type="submit" loading={saving}>Save Changes</Button>
+              </div>
+            </form>
+          </Card>
+        </motion.div>
+      </div>
+    </PageWrapper>
   );
 }

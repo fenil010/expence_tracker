@@ -1,151 +1,213 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
-  Box, Typography, ToggleButton, ToggleButtonGroup, Grid,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-} from '@mui/material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { useExpenseData } from '../hooks/useExpenseData';
-import { formatCurrency } from '../utils/helpers';
-import { tokens, glassCardStatic } from '../theme';
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from 'recharts';
+import { Calendar, Download } from 'lucide-react';
+import { PageWrapper, Card, Button, Select } from '../components/ui';
+import { ChartSkeleton } from '../components/ui/Skeleton';
+import { reportApi } from '../services/api';
 
-const COLORS = ['#FFFFFF', '#CCCCCC', '#999999', '#777777', '#555555', '#333333'];
+const MONO_COLORS = ['#1A1714', '#3D3830', '#8A8275', '#C4BDB0', '#E8E4DA', '#EFECE5'];
 
 const ChartTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <Box sx={{ bgcolor: '#1A1A1A', border: `1px solid ${tokens.borderDark}`, p: 1.5 }}>
-      <Typography variant="caption" sx={{ color: '#FFFFFF', fontWeight: 600 }}>{label}</Typography>
-      {payload.map((p, i) => (
-        <Typography key={i} variant="caption" sx={{ display: 'block', color: '#999999' }}>
-          {p.name}: {formatCurrency(p.value)}
-        </Typography>
+    <div className="bg-linen border border-stone/30 rounded-xl px-3 py-2 shadow-elevated">
+      <p className="text-xs text-drift mb-1">{label}</p>
+      {payload.map((entry, i) => (
+        <p key={i} className="text-sm font-medium text-obsidian">
+          <span className="text-xs text-drift mr-1">{entry.name}:</span>
+          ${Number(entry.value).toLocaleString()}
+        </p>
       ))}
-    </Box>
+    </div>
   );
 };
 
+const itemAnim = {
+  hidden: { opacity: 0, y: 12 },
+  show: (i) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.1, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] },
+  }),
+};
+
 export default function ReportsPage() {
-  const { data } = useExpenseData();
-  const transactions = data?.transactions || [];
-  const [range, setRange] = useState('month');
+  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState('monthly');
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [trendData, setTrendData] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
 
-  const monthlyData = useMemo(() => {
-    const months = {};
-    transactions.forEach((t) => {
-      const d = new Date(t.date);
-      const key = d.toLocaleDateString('en-US', { month: 'short' });
-      if (!months[key]) months[key] = { month: key, income: 0, expenses: 0 };
-      if (t.type === 'income') months[key].income += t.amount;
-      else months[key].expenses += t.amount;
-    });
-    return Object.values(months);
-  }, [transactions]);
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const [monthly, trends] = await Promise.all([
+          reportApi.getMonthly(),
+          reportApi.getTrends(),
+        ]);
 
-  const categoryData = useMemo(() => {
-    const cats = {};
-    transactions.filter((t) => t.type === 'expense').forEach((t) => {
-      cats[t.category] = (cats[t.category] || 0) + t.amount;
-    });
-    return Object.entries(cats).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [transactions]);
+        const mData = monthly.data || [];
+        setMonthlyData(Array.isArray(mData) ? mData : []);
 
-  const topExpenses = useMemo(() => {
-    return [...transactions].filter((t) => t.type === 'expense').sort((a, b) => b.amount - a.amount).slice(0, 5);
-  }, [transactions]);
+        const tData = trends.data || {};
+        setTrendData(tData.monthly || tData.trends || []);
+        setCategoryData(tData.categories || tData.categoryBreakdown || []);
+      } catch (err) {
+        console.error('Reports fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReports();
+  }, [period]);
+
+  if (loading) {
+    return (
+      <PageWrapper title="Reports" subtitle="Detailed financial analytics">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ChartSkeleton />
+          <ChartSkeleton />
+          <ChartSkeleton />
+          <ChartSkeleton />
+        </div>
+      </PageWrapper>
+    );
+  }
 
   return (
-    <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}>
-        <Box>
-          <Typography variant="h2" sx={{ fontWeight: 700, color: '#FFFFFF', mb: 0.5 }}>Reports</Typography>
-          <Typography variant="body2" sx={{ color: '#666666' }}>Analyze your financial patterns</Typography>
-        </Box>
-        <ToggleButtonGroup value={range} exclusive onChange={(_, v) => v && setRange(v)} size="small">
-          {['week', 'month', 'year'].map((r) => (
-            <ToggleButton key={r} value={r} sx={{
-              color: '#666666', border: `1px solid ${tokens.borderDark}`, textTransform: 'capitalize',
-              '&.Mui-selected': { bgcolor: '#FFFFFF', color: '#000000', '&:hover': { bgcolor: '#E0E0E0' } },
-            }}>
-              {r}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-      </Box>
-
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {/* Bar chart */}
-        <Grid size={{ xs: 12, lg: 7 }}>
-          <Box sx={{ ...glassCardStatic, p: 3 }}>
-            <Typography variant="h5" sx={{ fontWeight: 600, color: '#FFFFFF', mb: 0.5 }}>Income vs Expenses</Typography>
-            <Typography variant="body2" sx={{ color: '#666666', mb: 3 }}>Monthly comparison</Typography>
-            <Box sx={{ height: 280 }}>
+    <PageWrapper
+      title="Reports"
+      subtitle="Detailed financial analytics"
+      action={
+        <div className="flex items-center gap-2">
+          <Select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            options={[
+              { value: 'monthly', label: 'Monthly' },
+              { value: 'yearly', label: 'Yearly' },
+            ]}
+          />
+          <Button variant="secondary" icon={Download} size="sm">
+            Export
+          </Button>
+        </div>
+      }
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Income vs Expense Trend */}
+        <motion.div custom={0} variants={itemAnim} initial="hidden" animate="show">
+          <Card className="h-full">
+            <h3 className="text-base font-semibold text-obsidian mb-1">Income vs Expenses</h3>
+            <p className="text-xs text-drift mb-5">Monthly comparison</p>
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="0" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fill: '#666666', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#666666', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
+                <BarChart data={trendData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#C4BDB0" strokeOpacity={0.3} vertical={false} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="income" name="Income" fill="#FFFFFF" radius={0} />
-                  <Bar dataKey="expenses" name="Expenses" fill="#555555" radius={0} />
+                  <Bar dataKey="income" fill="#3D3830" radius={[6, 6, 0, 0]} barSize={20} animationDuration={600} />
+                  <Bar dataKey="expenses" fill="#C4BDB0" radius={[6, 6, 0, 0]} barSize={20} animationDuration={600} />
                 </BarChart>
               </ResponsiveContainer>
-            </Box>
-          </Box>
-        </Grid>
+            </div>
+          </Card>
+        </motion.div>
 
-        {/* Pie chart */}
-        <Grid size={{ xs: 12, lg: 5 }}>
-          <Box sx={{ ...glassCardStatic, p: 3, height: '100%' }}>
-            <Typography variant="h5" sx={{ fontWeight: 600, color: '#FFFFFF', mb: 0.5 }}>Category Breakdown</Typography>
-            <Typography variant="body2" sx={{ color: '#666666', mb: 2 }}>Where your money goes</Typography>
-            <Box sx={{ height: 280 }}>
+        {/* Spending Trend */}
+        <motion.div custom={1} variants={itemAnim} initial="hidden" animate="show">
+          <Card className="h-full">
+            <h3 className="text-base font-semibold text-obsidian mb-1">Spending Trend</h3>
+            <p className="text-xs text-drift mb-5">Over time</p>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthlyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="reportGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3D3830" stopOpacity={0.15} />
+                      <stop offset="100%" stopColor="#3D3830" stopOpacity={0.01} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#C4BDB0" strokeOpacity={0.3} vertical={false} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area type="monotone" dataKey="amount" stroke="#3D3830" strokeWidth={2} fill="url(#reportGradient)" animationDuration={800} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Category Distribution */}
+        <motion.div custom={2} variants={itemAnim} initial="hidden" animate="show">
+          <Card className="h-full">
+            <h3 className="text-base font-semibold text-obsidian mb-1">Category Distribution</h3>
+            <p className="text-xs text-drift mb-5">Where your money goes</p>
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={categoryData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2} dataKey="value">
-                    {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="none" />)}
+                  <Pie
+                    data={categoryData.length > 0 ? categoryData : [{ name: 'No data', value: 1 }]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={2}
+                    dataKey="value"
+                    animationDuration={600}
+                  >
+                    {(categoryData.length > 0 ? categoryData : [{ name: 'No data', value: 1 }]).map((_, index) => (
+                      <Cell key={index} fill={MONO_COLORS[index % MONO_COLORS.length]} />
+                    ))}
                   </Pie>
                   <Tooltip content={<ChartTooltip />} />
-                  <Legend content={({ payload }) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, justifyContent: 'center', mt: 1 }}>
-                      {payload.map((e, i) => (
-                        <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Box sx={{ width: 8, height: 8, bgcolor: e.color }} />
-                          <Typography variant="caption" sx={{ color: '#999999' }}>{e.value}</Typography>
-                        </Box>
-                      ))}
-                    </Box>
-                  )} />
                 </PieChart>
               </ResponsiveContainer>
-            </Box>
-          </Box>
-        </Grid>
-      </Grid>
-
-      {/* Top expenses */}
-      <Box sx={{ ...glassCardStatic }}>
-        <Typography variant="h5" sx={{ fontWeight: 600, color: '#FFFFFF', p: 3, pb: 0 }}>Top Expenses</Typography>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Description</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell align="right">Amount</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {topExpenses.map((t, i) => (
-                <TableRow key={i}>
-                  <TableCell><Typography variant="body2" sx={{ color: '#FFFFFF' }}>{t.description}</Typography></TableCell>
-                  <TableCell><Typography variant="body2" sx={{ color: '#666666' }}>{t.category}</Typography></TableCell>
-                  <TableCell align="right"><Typography variant="body2" sx={{ color: '#FF4444', fontWeight: 600 }}>{formatCurrency(t.amount)}</Typography></TableCell>
-                </TableRow>
+            </div>
+            <div className="mt-2 space-y-1.5">
+              {categoryData.slice(0, 5).map((item, i) => (
+                <div key={item.name} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: MONO_COLORS[i] }} />
+                    <span className="text-char">{item.name}</span>
+                  </div>
+                  <span className="font-medium text-obsidian">${Number(item.value).toLocaleString()}</span>
+                </div>
               ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-    </Box>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Summary Stats */}
+        <motion.div custom={3} variants={itemAnim} initial="hidden" animate="show">
+          <Card className="flex flex-col justify-between h-full">
+            <div>
+              <h3 className="text-base font-semibold text-obsidian mb-1">Summary</h3>
+              <p className="text-xs text-drift mb-8">Key financial metrics</p>
+            </div>
+            <div className="space-y-3">
+              {[
+                { label: 'Total Income', value: trendData.reduce?.((s, d) => s + (d.income || 0), 0) || 0 },
+                { label: 'Total Expenses', value: trendData.reduce?.((s, d) => s + (d.expenses || 0), 0) || 0 },
+                { label: 'Net Savings', value: trendData.reduce?.((s, d) => s + (d.income || 0) - (d.expenses || 0), 0) || 0 },
+                { label: 'Avg Monthly Spend', value: trendData.length > 0 ? trendData.reduce((s, d) => s + (d.expenses || 0), 0) / trendData.length : 0 },
+              ].map((stat) => (
+                <div key={stat.label} className="flex items-center justify-between py-3.5 border-b border-stone/15 last:border-0">
+                  <span className="text-sm text-drift">{stat.label}</span>
+                  <span className="text-sm font-semibold text-obsidian tabular-nums">
+                    ${Number(stat.value).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </motion.div>
+      </div>
+    </PageWrapper>
   );
 }
