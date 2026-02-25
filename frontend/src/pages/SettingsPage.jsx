@@ -66,21 +66,21 @@ export default function SettingsPage() {
         >
           <Card>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-sand/60 flex items-center justify-center">
-                <User className="w-4 h-4 text-char" />
+              <div className="w-8 h-8 rounded-lg bg-sand/60 dark:bg-zinc-800 flex items-center justify-center">
+                <User className="w-4 h-4 text-char dark:text-zinc-300" />
               </div>
-              <h3 className="text-base font-semibold text-obsidian">Account</h3>
+              <h3 className="text-base font-semibold text-obsidian dark:text-white">Account</h3>
             </div>
 
-            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-stone/20">
-              <div className="w-14 h-14 rounded-2xl bg-sand flex items-center justify-center">
-                <span className="text-xl font-semibold text-obsidian">
+            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-stone/20 dark:border-zinc-800">
+              <div className="w-14 h-14 rounded-2xl bg-sand dark:bg-zinc-800 flex items-center justify-center">
+                <span className="text-xl font-semibold text-obsidian dark:text-white">
                   {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </span>
               </div>
               <div>
-                <p className="text-lg font-semibold text-obsidian">{user?.name || 'User'}</p>
-                <p className="text-sm text-drift">{user?.email || ''}</p>
+                <p className="text-lg font-semibold text-obsidian dark:text-white">{user?.name || 'User'}</p>
+                <p className="text-sm text-drift dark:text-zinc-400">{user?.email || ''}</p>
               </div>
             </div>
 
@@ -99,24 +99,24 @@ export default function SettingsPage() {
         >
           <Card>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-sand/60 flex items-center justify-center">
-                <Bell className="w-4 h-4 text-char" />
+              <div className="w-8 h-8 rounded-lg bg-sand/60 dark:bg-zinc-800 flex items-center justify-center">
+                <Bell className="w-4 h-4 text-char dark:text-zinc-300" />
               </div>
-              <h3 className="text-base font-semibold text-obsidian">Notifications</h3>
+              <h3 className="text-base font-semibold text-obsidian dark:text-white">Notifications</h3>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-char">Budget Alerts</p>
-                  <p className="text-xs text-drift">Get notified when close to budget limit</p>
+                  <p className="text-sm font-medium text-char dark:text-zinc-200">Budget Alerts</p>
+                  <p className="text-xs text-drift dark:text-zinc-500">Get notified when close to budget limit</p>
                 </div>
                 <Toggle checked={notifications} onChange={setNotifications} />
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-char">Weekly Summary</p>
-                  <p className="text-xs text-drift">Receive weekly spending report</p>
+                  <p className="text-sm font-medium text-char dark:text-zinc-200">Weekly Summary</p>
+                  <p className="text-xs text-drift dark:text-zinc-500">Receive weekly spending report</p>
                 </div>
                 <Toggle checked={false} onChange={() => {}} />
               </div>
@@ -132,10 +132,10 @@ export default function SettingsPage() {
         >
           <Card>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-sand/60 flex items-center justify-center">
-                <Shield className="w-4 h-4 text-char" />
+              <div className="w-8 h-8 rounded-lg bg-sand/60 dark:bg-zinc-800 flex items-center justify-center">
+                <Shield className="w-4 h-4 text-char dark:text-zinc-300" />
               </div>
-              <h3 className="text-base font-semibold text-obsidian">Security</h3>
+              <h3 className="text-base font-semibold text-obsidian dark:text-white">Security</h3>
             </div>
 
             <form onSubmit={handleChangePassword} className="space-y-4">
@@ -173,14 +173,14 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.3 }}
         >
-          <Card className="border-red-200/30">
+          <Card className="border-red-200/30 dark:border-red-900/30">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-red-50/40 flex items-center justify-center">
-                <Trash2 className="w-4 h-4 text-red-700/50" />
+              <div className="w-8 h-8 rounded-lg bg-red-50/40 dark:bg-red-950/30 flex items-center justify-center">
+                <Trash2 className="w-4 h-4 text-red-700/50 dark:text-red-400" />
               </div>
-              <h3 className="text-base font-semibold text-obsidian">Danger Zone</h3>
+              <h3 className="text-base font-semibold text-obsidian dark:text-white">Danger Zone</h3>
             </div>
-            <p className="text-sm text-drift mb-4">
+            <p className="text-sm text-drift dark:text-zinc-400 mb-4">
               Permanently delete your account and all associated data. This action cannot be undone.
             </p>
             <Button variant="danger" onClick={handleDeleteAccount}>

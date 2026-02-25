@@ -14,11 +14,11 @@ const MONO_COLORS = ['#1A1714', '#3D3830', '#8A8275', '#C4BDB0', '#E8E4DA', '#EF
 const ChartTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-linen border border-stone/30 rounded-xl px-3 py-2 shadow-elevated">
-      <p className="text-xs text-drift mb-1">{label}</p>
+    <div className="bg-linen dark:bg-zinc-900 border border-stone/30 dark:border-zinc-700 rounded-xl px-3 py-2 shadow-elevated">
+      <p className="text-xs text-drift dark:text-zinc-400 mb-1">{label}</p>
       {payload.map((entry, i) => (
-        <p key={i} className="text-sm font-medium text-obsidian">
-          <span className="text-xs text-drift mr-1">{entry.name}:</span>
+        <p key={i} className="text-sm font-medium text-obsidian dark:text-white">
+          <span className="text-xs text-drift dark:text-zinc-500 mr-1">{entry.name}:</span>
           ${Number(entry.value).toLocaleString()}
         </p>
       ))}
@@ -101,8 +101,8 @@ export default function ReportsPage() {
         {/* Income vs Expense Trend */}
         <motion.div custom={0} variants={itemAnim} initial="hidden" animate="show">
           <Card className="h-full">
-            <h3 className="text-base font-semibold text-obsidian mb-1">Income vs Expenses</h3>
-            <p className="text-xs text-drift mb-5">Monthly comparison</p>
+            <h3 className="text-base font-semibold text-obsidian dark:text-white mb-1">Income vs Expenses</h3>
+            <p className="text-xs text-drift dark:text-zinc-400 mb-5">Monthly comparison</p>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={trendData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
@@ -121,8 +121,8 @@ export default function ReportsPage() {
         {/* Spending Trend */}
         <motion.div custom={1} variants={itemAnim} initial="hidden" animate="show">
           <Card className="h-full">
-            <h3 className="text-base font-semibold text-obsidian mb-1">Spending Trend</h3>
-            <p className="text-xs text-drift mb-5">Over time</p>
+            <h3 className="text-base font-semibold text-obsidian dark:text-white mb-1">Spending Trend</h3>
+            <p className="text-xs text-drift dark:text-zinc-400 mb-5">Over time</p>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={monthlyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
@@ -146,8 +146,8 @@ export default function ReportsPage() {
         {/* Category Distribution */}
         <motion.div custom={2} variants={itemAnim} initial="hidden" animate="show">
           <Card className="h-full">
-            <h3 className="text-base font-semibold text-obsidian mb-1">Category Distribution</h3>
-            <p className="text-xs text-drift mb-5">Where your money goes</p>
+            <h3 className="text-base font-semibold text-obsidian dark:text-white mb-1">Category Distribution</h3>
+            <p className="text-xs text-drift dark:text-zinc-400 mb-5">Where your money goes</p>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -174,9 +174,9 @@ export default function ReportsPage() {
                 <div key={item.name} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: MONO_COLORS[i] }} />
-                    <span className="text-char">{item.name}</span>
+                    <span className="text-char dark:text-zinc-300">{item.name}</span>
                   </div>
-                  <span className="font-medium text-obsidian">${Number(item.value).toLocaleString()}</span>
+                  <span className="font-medium text-obsidian dark:text-white">${Number(item.value).toLocaleString()}</span>
                 </div>
               ))}
             </div>
@@ -187,8 +187,8 @@ export default function ReportsPage() {
         <motion.div custom={3} variants={itemAnim} initial="hidden" animate="show">
           <Card className="flex flex-col justify-between h-full">
             <div>
-              <h3 className="text-base font-semibold text-obsidian mb-1">Summary</h3>
-              <p className="text-xs text-drift mb-8">Key financial metrics</p>
+              <h3 className="text-base font-semibold text-obsidian dark:text-white mb-1">Summary</h3>
+              <p className="text-xs text-drift dark:text-zinc-400 mb-8">Key financial metrics</p>
             </div>
             <div className="space-y-3">
               {[
@@ -197,9 +197,9 @@ export default function ReportsPage() {
                 { label: 'Net Savings', value: trendData.reduce?.((s, d) => s + (d.income || 0) - (d.expenses || 0), 0) || 0 },
                 { label: 'Avg Monthly Spend', value: trendData.length > 0 ? trendData.reduce((s, d) => s + (d.expenses || 0), 0) / trendData.length : 0 },
               ].map((stat) => (
-                <div key={stat.label} className="flex items-center justify-between py-3.5 border-b border-stone/15 last:border-0">
-                  <span className="text-sm text-drift">{stat.label}</span>
-                  <span className="text-sm font-semibold text-obsidian tabular-nums">
+                <div key={stat.label} className="flex items-center justify-between py-3.5 border-b border-stone/15 dark:border-zinc-800 last:border-0">
+                  <span className="text-sm text-drift dark:text-zinc-400">{stat.label}</span>
+                  <span className="text-sm font-semibold text-obsidian dark:text-white tabular-nums">
                     ${Number(stat.value).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
                 </div>

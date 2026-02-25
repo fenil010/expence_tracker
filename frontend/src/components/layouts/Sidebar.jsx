@@ -8,8 +8,12 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -34,16 +38,22 @@ const navItemVariants = {
   show: { x: 0, opacity: 1, transition: { duration: 0.35 } },
 };
 
+const themeIcons = { light: Sun, dark: Moon, system: Monitor };
+const themeLabels = { light: 'Light', dark: 'Dark', system: 'System' };
+
 export default function Sidebar() {
   const { logout, user } = useAuth();
   const { pathname } = useLocation();
+  const { mode, toggleTheme } = useTheme();
+
+  const ThemeIcon = themeIcons[mode];
 
   return (
     <motion.aside
       initial="hidden"
       animate="show"
       variants={sidebarVariants}
-      className="fixed left-0 top-0 bottom-0 w-64 bg-linen border-r border-stone/20 flex flex-col z-40"
+      className="fixed left-0 top-0 bottom-0 w-64 bg-linen dark:bg-zinc-900 border-r border-stone/20 dark:border-zinc-800 flex flex-col z-40 transition-colors duration-300"
     >
       {/* Logo */}
       <div className="px-6 py-7">
@@ -51,9 +61,9 @@ export default function Sidebar() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.15 }}
-          className="text-xl font-semibold text-obsidian tracking-tight"
+          className="text-xl font-semibold text-obsidian dark:text-white tracking-tight"
         >
-          Ledger<span className="text-drift">.</span>
+          Ledger<span className="text-drift dark:text-zinc-500">.</span>
         </motion.h1>
       </div>
 
@@ -77,8 +87,8 @@ export default function Sidebar() {
                     rounded-xl text-sm font-medium
                     transition-colors duration-300 ease-smooth
                     ${isActive
-                      ? 'bg-sand text-obsidian shadow-soft'
-                      : 'text-drift hover:text-char hover:bg-sand/40'
+                      ? 'bg-sand dark:bg-zinc-800 text-obsidian dark:text-white shadow-soft dark:shadow-none'
+                      : 'text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand/40 dark:hover:bg-zinc-800/60'
                     }
                   `}
                 >
@@ -87,7 +97,7 @@ export default function Sidebar() {
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active"
-                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-obsidian rounded-full"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-obsidian dark:bg-white rounded-full"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     />
                   )}
@@ -99,24 +109,41 @@ export default function Sidebar() {
       </nav>
 
       {/* Divider */}
-      <div className="mx-5 border-t border-stone/20" />
+      <div className="mx-5 border-t border-stone/20 dark:border-zinc-800" />
 
-      {/* User + Logout */}
+      {/* Theme toggle + User + Logout */}
       <motion.div
         variants={navItemVariants}
         className="p-4 space-y-3"
       >
+        {/* Theme toggle */}
+        <motion.button
+          whileHover={{ x: 4 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={toggleTheme}
+          className="flex items-center gap-3 w-full px-3 py-2.5
+            rounded-xl text-sm text-drift dark:text-zinc-400
+            hover:bg-sand/40 dark:hover:bg-zinc-800/60 hover:text-char dark:hover:text-zinc-200
+            transition-colors duration-300 cursor-pointer"
+        >
+          <ThemeIcon className="w-[18px] h-[18px]" strokeWidth={1.8} />
+          <span>{themeLabels[mode]}</span>
+          <kbd className="ml-auto text-[10px] px-1.5 py-0.5 bg-sand/60 dark:bg-zinc-800 border border-stone/20 dark:border-zinc-700 rounded-md text-drift/60 dark:text-zinc-500">
+            {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}K
+          </kbd>
+        </motion.button>
+
         <div className="flex items-center gap-3 px-2">
-          <div className="w-9 h-9 rounded-xl bg-sand flex items-center justify-center">
-            <span className="text-xs font-semibold text-obsidian">
+          <div className="w-9 h-9 rounded-xl bg-sand dark:bg-zinc-800 flex items-center justify-center">
+            <span className="text-xs font-semibold text-obsidian dark:text-white">
               {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-obsidian truncate">
+            <p className="text-sm font-medium text-obsidian dark:text-zinc-100 truncate">
               {user?.name || 'User'}
             </p>
-            <p className="text-xs text-drift truncate">
+            <p className="text-xs text-drift dark:text-zinc-500 truncate">
               {user?.email || ''}
             </p>
           </div>
@@ -127,8 +154,8 @@ export default function Sidebar() {
           whileTap={{ scale: 0.98 }}
           onClick={logout}
           className="flex items-center gap-3 w-full px-3 py-2.5
-            rounded-xl text-sm text-drift
-            hover:bg-sand/40 hover:text-char
+            rounded-xl text-sm text-drift dark:text-zinc-400
+            hover:bg-sand/40 dark:hover:bg-zinc-800/60 hover:text-char dark:hover:text-zinc-200
             transition-colors duration-300 cursor-pointer"
         >
           <LogOut className="w-[18px] h-[18px]" strokeWidth={1.8} />

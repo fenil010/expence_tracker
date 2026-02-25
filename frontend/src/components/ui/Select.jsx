@@ -12,7 +12,7 @@ const Select = forwardRef(({
   return (
     <div className="space-y-1.5">
       {label && (
-        <label className="block text-sm font-medium text-char">
+        <label className="block text-sm font-medium text-char dark:text-zinc-200">
           {label}
         </label>
       )}
@@ -21,12 +21,12 @@ const Select = forwardRef(({
           ref={ref}
           className={`
             w-full px-3 py-2.5 pr-10
-            bg-parchment border border-stone/40
-            rounded-xl text-char text-sm
+            bg-parchment dark:bg-zinc-950 border border-stone/40 dark:border-zinc-700
+            rounded-xl text-char dark:text-zinc-100 text-sm
             appearance-none cursor-pointer
-            focus:outline-none focus:border-char
+            focus:outline-none focus:border-char dark:focus:border-zinc-400
             transition-colors duration-300 ease-smooth
-            ${error ? 'border-red-300/60' : ''}
+            ${error ? 'border-red-300/60 dark:border-red-500/50' : ''}
             ${className}
           `}
           {...props}
@@ -43,10 +43,10 @@ const Select = forwardRef(({
             </option>
           ))}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-drift pointer-events-none" />
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-drift dark:text-zinc-500 pointer-events-none" />
       </div>
       {error && (
-        <p className="text-xs text-red-600/70">{error}</p>
+        <p className="text-xs text-red-600/70 dark:text-red-400">{error}</p>
       )}
     </div>
   );

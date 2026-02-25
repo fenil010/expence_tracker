@@ -188,6 +188,20 @@ const goalSchema = new mongoose.Schema({
   isFeatured: {
     type: Boolean,
     default: false
+  },
+
+  // Linked account for auto-tracking
+  linkedAccount: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account',
+    default: null
+  },
+
+  // Reminder frequency
+  reminderFrequency: {
+    type: String,
+    enum: ['none', 'weekly', 'biweekly', 'monthly'],
+    default: 'none'
   }
 }, {
   timestamps: true,

@@ -12,7 +12,7 @@ export default function Card({
       whileHover={hover ? { y: -2, boxShadow: '0 12px 32px rgba(26, 23, 20, 0.10)' } : {}}
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
       className={`
-        bg-linen border border-stone/25 rounded-2xl
+        bg-linen dark:bg-zinc-900 border border-stone/25 dark:border-zinc-800 rounded-2xl
         shadow-card ${padding}
         ${className}
       `}

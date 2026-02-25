@@ -23,12 +23,12 @@ export default function RecentTransactions({ transactions = [], className = '' }
       <Card padding="p-0" className={className}>
         <div className="flex items-center justify-between px-6 pt-6 pb-4">
           <div>
-            <h3 className="text-base font-semibold text-obsidian">Recent Transactions</h3>
-            <p className="text-xs text-drift mt-1">Your latest activity</p>
+            <h3 className="text-base font-semibold text-obsidian dark:text-white">Recent Transactions</h3>
+            <p className="text-xs text-drift dark:text-zinc-400 mt-1">Your latest activity</p>
           </div>
           <Link
             to="/transactions"
-            className="flex items-center gap-1.5 text-xs font-medium text-drift hover:text-char transition-colors duration-200"
+            className="flex items-center gap-1.5 text-xs font-medium text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 transition-colors duration-200"
           >
             View all
             <ArrowRight className="w-3.5 h-3.5" />
@@ -37,9 +37,9 @@ export default function RecentTransactions({ transactions = [], className = '' }
 
         <motion.div variants={container} initial="hidden" animate="show">
           {transactions.length === 0 ? (
-            <p className="px-6 pb-6 text-sm text-drift">No transactions yet</p>
+            <p className="px-6 pb-6 text-sm text-drift dark:text-zinc-500">No transactions yet</p>
           ) : (
-            <div className="divide-y divide-stone/15">
+            <div className="divide-y divide-stone/15 dark:divide-zinc-800">
               {transactions.slice(0, 6).map((tx) => {
                 const isIncome = tx.type === 'income';
                 return (
@@ -52,24 +52,24 @@ export default function RecentTransactions({ transactions = [], className = '' }
                     <div className="flex items-center gap-3.5">
                       <div className={`
                         w-10 h-10 rounded-xl flex items-center justify-center shrink-0
-                        ${isIncome ? 'bg-emerald-50/60' : 'bg-sand/60'}
+                        ${isIncome ? 'bg-emerald-50/60 dark:bg-emerald-950/40' : 'bg-sand/60 dark:bg-zinc-800'}
                       `}>
                         {isIncome ? (
-                          <ArrowUpRight className="w-4 h-4 text-emerald-700/60" />
+                          <ArrowUpRight className="w-4 h-4 text-emerald-700/60 dark:text-emerald-400" />
                         ) : (
-                          <ArrowDownRight className="w-4 h-4 text-char" />
+                          <ArrowDownRight className="w-4 h-4 text-char dark:text-zinc-400" />
                         )}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-obsidian">
+                        <p className="text-sm font-medium text-obsidian dark:text-zinc-200">
                           {tx.description || tx.category?.name || 'Transaction'}
                         </p>
-                        <p className="text-xs text-drift mt-0.5">
+                        <p className="text-xs text-drift dark:text-zinc-500 mt-0.5">
                           {tx.category?.name || tx.category || ''} · {new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </p>
                       </div>
                     </div>
-                    <span className={`text-sm font-semibold tabular-nums ${isIncome ? 'text-emerald-700/70' : 'text-obsidian'}`}>
+                    <span className={`text-sm font-semibold tabular-nums ${isIncome ? 'text-emerald-700/70 dark:text-emerald-400' : 'text-obsidian dark:text-zinc-200'}`}>
                       {isIncome ? '+' : '-'}${Math.abs(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </span>
                   </motion.div>

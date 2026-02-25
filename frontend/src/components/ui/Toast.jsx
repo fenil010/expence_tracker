@@ -5,13 +5,13 @@ import { CheckCircle, AlertCircle, X } from 'lucide-react';
 const toastVariants = {
   success: {
     icon: CheckCircle,
-    bg: 'bg-linen border-stone/40',
-    iconColor: 'text-emerald-700/70',
+    bg: 'bg-linen dark:bg-zinc-900 border-stone/40 dark:border-zinc-700',
+    iconColor: 'text-emerald-700/70 dark:text-emerald-400',
   },
   error: {
     icon: AlertCircle,
-    bg: 'bg-linen border-red-200/40',
-    iconColor: 'text-red-700/60',
+    bg: 'bg-linen dark:bg-zinc-900 border-red-200/40 dark:border-red-800/40',
+    iconColor: 'text-red-700/60 dark:text-red-400',
   },
 };
 
@@ -37,10 +37,10 @@ export function Toast({ message, type = 'success', onClose }) {
       `}
     >
       <Icon className={`w-4 h-4 ${config.iconColor} shrink-0`} />
-      <p className="text-sm text-char flex-1">{message}</p>
+      <p className="text-sm text-char dark:text-zinc-200 flex-1">{message}</p>
       <button
         onClick={onClose}
-        className="p-1 text-drift hover:text-char transition-colors cursor-pointer"
+        className="p-1 text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-200 transition-colors cursor-pointer"
       >
         <X className="w-3.5 h-3.5" />
       </button>

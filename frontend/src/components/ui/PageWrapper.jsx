@@ -49,12 +49,12 @@ export default function PageWrapper({
         >
           <div>
             {title && (
-              <h1 className="text-3xl font-semibold text-obsidian tracking-tight">
+              <h1 className="text-3xl font-semibold text-obsidian dark:text-white tracking-tight">
                 {title}
               </h1>
             )}
             {subtitle && (
-              <p className="mt-1.5 text-sm text-drift">{subtitle}</p>
+              <p className="mt-1.5 text-sm text-drift dark:text-zinc-400">{subtitle}</p>
             )}
           </div>
           {action && <div>{action}</div>}

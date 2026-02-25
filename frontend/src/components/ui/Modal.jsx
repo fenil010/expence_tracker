@@ -61,7 +61,7 @@ export default function Modal({
           onClick={(e) => e.target === overlayRef.current && onClose()}
         >
           {/* Overlay */}
-          <div className="absolute inset-0 bg-obsidian/20 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-obsidian/20 dark:bg-black/50 backdrop-blur-sm" />
 
           {/* Modal */}
           <motion.div
@@ -71,7 +71,7 @@ export default function Modal({
             exit="exit"
             className={`
               relative w-full ${maxWidth}
-              bg-linen border border-stone/30
+              bg-linen dark:bg-zinc-900 border border-stone/30 dark:border-zinc-700
               rounded-2xl shadow-modal
               overflow-hidden
               ${className}
@@ -79,11 +79,11 @@ export default function Modal({
           >
             {/* Header */}
             {title && (
-              <div className="flex items-center justify-between px-6 py-4 border-b border-stone/30">
-                <h2 className="text-lg font-semibold text-obsidian">{title}</h2>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-stone/30 dark:border-zinc-700">
+                <h2 className="text-lg font-semibold text-obsidian dark:text-white">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="p-1.5 rounded-xl text-drift hover:text-char hover:bg-sand transition-colors duration-300 cursor-pointer"
+                  className="p-1.5 rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>

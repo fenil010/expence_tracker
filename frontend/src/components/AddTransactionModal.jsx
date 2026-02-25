@@ -62,7 +62,7 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Type Toggle */}
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-char">
+          <span className="text-sm font-medium text-char dark:text-zinc-200">
             {isIncome ? 'Income' : 'Expense'}
           </span>
           <Toggle

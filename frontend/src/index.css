@@ -2,7 +2,7 @@
 
 /* ── Tailwind v4 Theme ─────────────────── */
 @theme {
-  /* Colors */
+  /* Colors — Light palette */
   --color-parchment: #F7F5F0;
   --color-linen: #EFECE5;
   --color-sand: #E8E4DA;
@@ -39,7 +39,7 @@
   --radius-2xl: 1.25rem;
   --radius-3xl: 1.5rem;
 
-  /* Shadows */
+  /* Shadows — Light */
   --shadow-soft: 0 1px 4px rgba(26, 23, 20, 0.06), 0 4px 12px rgba(26, 23, 20, 0.04);
   --shadow-card: 0 2px 8px rgba(26, 23, 20, 0.07), 0 8px 24px rgba(26, 23, 20, 0.05);
   --shadow-elevated: 0 8px 24px rgba(26, 23, 20, 0.10), 0 16px 48px rgba(26, 23, 20, 0.06);
@@ -82,12 +82,22 @@
 
 /* ── Base ──────────────────────────────── */
 @layer base {
+  html {
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
   body {
     background-color: var(--color-parchment);
     color: var(--color-char);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Dark mode body overrides */
+  .dark body {
+    background-color: #0f0f0f;
+    color: #e4e4e7;
   }
 
   /* Scrollbar */
@@ -104,11 +114,21 @@
   ::-webkit-scrollbar-thumb:hover {
     background: var(--color-drift);
   }
+  .dark ::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #52525b;
+  }
 
   /* Selection */
   ::selection {
     background: var(--color-sand);
     color: var(--color-obsidian);
+  }
+  .dark ::selection {
+    background: #3f3f46;
+    color: #fafafa;
   }
 
   /* Focus */
@@ -116,6 +136,9 @@
     outline: 2px solid var(--color-stone);
     outline-offset: 2px;
     border-radius: 4px;
+  }
+  .dark *:focus-visible {
+    outline-color: #52525b;
   }
 
   /* Input Resets */
@@ -153,4 +176,15 @@
   );
   background-size: 200% 100%;
   animation: shimmer 1.8s infinite linear;
+}
+
+/* Dark mode skeleton shimmer */
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #1c1c1e 25%,
+    #2c2c2e 50%,
+    #1c1c1e 75%
+  );
+  background-size: 200% 100%;
 }

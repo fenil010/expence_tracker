@@ -2,10 +2,10 @@ import { forwardRef } from 'react';
 import { motion } from 'framer-motion';
 
 const variants = {
-  primary: 'bg-obsidian text-parchment hover:opacity-90',
-  secondary: 'bg-linen text-char border border-stone hover:bg-sand',
-  ghost: 'bg-transparent text-char hover:bg-sand',
-  danger: 'bg-parchment text-red-800/70 border border-red-200/50 hover:bg-red-50/50',
+  primary: 'bg-obsidian dark:bg-white text-parchment dark:text-zinc-900 hover:opacity-90',
+  secondary: 'bg-linen dark:bg-zinc-800 text-char dark:text-zinc-200 border border-stone dark:border-zinc-700 hover:bg-sand dark:hover:bg-zinc-700',
+  ghost: 'bg-transparent text-char dark:text-zinc-300 hover:bg-sand dark:hover:bg-zinc-800',
+  danger: 'bg-parchment dark:bg-red-950/30 text-red-800/70 dark:text-red-400 border border-red-200/50 dark:border-red-800/40 hover:bg-red-50/50 dark:hover:bg-red-950/50',
 };
 
 const sizes = {

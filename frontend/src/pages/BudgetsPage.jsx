@@ -79,10 +79,10 @@ export default function BudgetsPage() {
         </div>
       ) : budgets.length === 0 ? (
         <Card className="text-center py-16">
-          <div className="w-14 h-14 rounded-2xl bg-sand/60 flex items-center justify-center mx-auto mb-4">
-            <Plus className="w-6 h-6 text-drift" />
+          <div className="w-14 h-14 rounded-2xl bg-sand/60 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+            <Plus className="w-6 h-6 text-drift dark:text-zinc-400" />
           </div>
-          <p className="text-drift text-sm mb-4">No budgets set yet</p>
+          <p className="text-drift dark:text-zinc-400 text-sm mb-4">No budgets set yet</p>
           <Button onClick={() => setShowModal(true)} icon={Plus}>Create Budget</Button>
         </Card>
       ) : (
@@ -106,14 +106,14 @@ export default function BudgetsPage() {
                   <Card className="h-full">
                     <div className="flex items-start justify-between mb-5">
                       <div>
-                        <h3 className="font-semibold text-obsidian">
+                        <h3 className="font-semibold text-obsidian dark:text-white">
                           {budget.category?.name || budget.category || 'General'}
                         </h3>
-                        <p className="text-xs text-drift mt-1 capitalize">{budget.period || 'Monthly'}</p>
+                        <p className="text-xs text-drift dark:text-zinc-500 mt-1 capitalize">{budget.period || 'Monthly'}</p>
                       </div>
                       <button
                         onClick={() => handleDelete(budget._id || budget.id)}
-                        className="p-1.5 rounded-lg text-drift hover:text-red-700/60 hover:bg-red-50/30 transition-all duration-300 cursor-pointer"
+                        className="p-1.5 rounded-lg text-drift dark:text-zinc-500 hover:text-red-700/60 dark:hover:text-red-400 hover:bg-red-50/30 dark:hover:bg-red-950/30 transition-all duration-300 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -121,27 +121,27 @@ export default function BudgetsPage() {
 
                     <div className="space-y-3">
                       <div className="flex items-end justify-between">
-                        <span className="text-2xl font-semibold text-obsidian tabular-nums">
+                        <span className="text-2xl font-semibold text-obsidian dark:text-white tabular-nums">
                           ${spent.toLocaleString()}
                         </span>
-                        <span className="text-sm text-drift tabular-nums">
+                        <span className="text-sm text-drift dark:text-zinc-500 tabular-nums">
                           of ${limit.toLocaleString()}
                         </span>
                       </div>
 
                       {/* Progress bar */}
-                      <div className="h-2.5 bg-sand rounded-full overflow-hidden">
+                      <div className="h-2.5 bg-sand dark:bg-zinc-800 rounded-full overflow-hidden">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${progress}%` }}
                           transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.2 }}
-                          className={`h-full rounded-full ${isOver ? 'bg-red-400/60' : 'bg-obsidian'}`}
+                          className={`h-full rounded-full ${isOver ? 'bg-red-400/60' : 'bg-obsidian dark:bg-white'}`}
                         />
                       </div>
 
-                      <p className="text-xs text-drift">
+                      <p className="text-xs text-drift dark:text-zinc-400">
                         {isOver ? (
-                          <span className="text-red-700/60">Over budget by ${(spent - limit).toLocaleString()}</span>
+                          <span className="text-red-700/60 dark:text-red-400">Over budget by ${(spent - limit).toLocaleString()}</span>
                         ) : (
                           <span>${(limit - spent).toLocaleString()} remaining</span>
                         )}

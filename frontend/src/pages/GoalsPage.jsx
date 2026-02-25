@@ -96,10 +96,10 @@ export default function GoalsPage() {
         </div>
       ) : goals.length === 0 ? (
         <Card className="text-center py-16">
-          <div className="w-14 h-14 rounded-2xl bg-sand/60 flex items-center justify-center mx-auto mb-4">
-            <Target className="w-6 h-6 text-drift" />
+          <div className="w-14 h-14 rounded-2xl bg-sand/60 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+            <Target className="w-6 h-6 text-drift dark:text-zinc-400" />
           </div>
-          <p className="text-drift text-sm mb-4">No savings goals yet</p>
+          <p className="text-drift dark:text-zinc-400 text-sm mb-4">No savings goals yet</p>
           <Button onClick={() => setShowCreateModal(true)} icon={Plus}>Create Goal</Button>
         </Card>
       ) : (
@@ -123,13 +123,13 @@ export default function GoalsPage() {
                   <Card className="h-full">
                     <div className="flex items-start justify-between mb-5">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-sand/60 flex items-center justify-center">
-                          <Target className="w-5 h-5 text-char" />
+                        <div className="w-10 h-10 rounded-xl bg-sand/60 dark:bg-zinc-800 flex items-center justify-center">
+                          <Target className="w-5 h-5 text-char dark:text-zinc-300" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-obsidian text-sm">{goal.name}</h3>
+                          <h3 className="font-semibold text-obsidian dark:text-white text-sm">{goal.name}</h3>
                           {goal.deadline && (
-                            <p className="text-xs text-drift">
+                            <p className="text-xs text-drift dark:text-zinc-500">
                               Due {new Date(goal.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </p>
                           )}
@@ -137,7 +137,7 @@ export default function GoalsPage() {
                       </div>
                       <button
                         onClick={() => handleDelete(goal._id || goal.id)}
-                        className="p-1.5 rounded-lg text-drift hover:text-red-700/60 hover:bg-red-50/30 transition-all duration-300 cursor-pointer"
+                        className="p-1.5 rounded-lg text-drift dark:text-zinc-500 hover:text-red-700/60 dark:hover:text-red-400 hover:bg-red-50/30 dark:hover:bg-red-950/30 transition-all duration-300 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -145,25 +145,25 @@ export default function GoalsPage() {
 
                     <div className="space-y-3">
                       <div className="flex items-end justify-between">
-                        <span className="text-2xl font-semibold text-obsidian tabular-nums">
+                        <span className="text-2xl font-semibold text-obsidian dark:text-white tabular-nums">
                           ${saved.toLocaleString()}
                         </span>
-                        <span className="text-sm text-drift tabular-nums">
+                        <span className="text-sm text-drift dark:text-zinc-500 tabular-nums">
                           of ${target.toLocaleString()}
                         </span>
                       </div>
 
-                      <div className="h-2.5 bg-sand rounded-full overflow-hidden">
+                      <div className="h-2.5 bg-sand dark:bg-zinc-800 rounded-full overflow-hidden">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${progress}%` }}
                           transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.2 }}
-                          className={`h-full rounded-full ${isComplete ? 'bg-emerald-600/60' : 'bg-obsidian'}`}
+                          className={`h-full rounded-full ${isComplete ? 'bg-emerald-600/60' : 'bg-obsidian dark:bg-white'}`}
                         />
                       </div>
 
                       <div className="flex items-center justify-between">
-                        <p className="text-xs text-drift">
+                        <p className="text-xs text-drift dark:text-zinc-400">
                           {isComplete ? '🎯 Goal reached!' : `${progress.toFixed(0)}% complete`}
                         </p>
                         {!isComplete && (

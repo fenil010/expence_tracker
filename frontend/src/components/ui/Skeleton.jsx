@@ -9,7 +9,7 @@ export function Skeleton({ className = '', ...props }) {
 
 export function CardSkeleton() {
   return (
-    <div className="bg-linen border border-stone/30 rounded-2xl p-6 space-y-4">
+    <div className="bg-linen dark:bg-zinc-900 border border-stone/30 dark:border-zinc-800 rounded-2xl p-6 space-y-4">
       <Skeleton className="h-4 w-24" />
       <Skeleton className="h-8 w-36" />
       <Skeleton className="h-3 w-20" />
@@ -33,7 +33,7 @@ export function TableRowSkeleton({ columns = 4 }) {
 
 export function ChartSkeleton() {
   return (
-    <div className="bg-linen border border-stone/30 rounded-2xl p-6 space-y-4">
+    <div className="bg-linen dark:bg-zinc-900 border border-stone/30 dark:border-zinc-800 rounded-2xl p-6 space-y-4">
       <Skeleton className="h-4 w-32" />
       <div className="flex items-end gap-2 h-48">
         {Array.from({ length: 7 }).map((_, i) => (

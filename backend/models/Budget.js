@@ -93,6 +93,12 @@ const budgetSchema = new mongoose.Schema({
     default: 0
   },
 
+  // Recurring auto-creation
+  autoRenew: {
+    type: Boolean,
+    default: true
+  },
+
   // Status
   status: {
     type: String,

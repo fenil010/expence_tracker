@@ -1,8 +1,8 @@
 const variants = {
-  default: 'bg-sand/60 text-char',
-  success: 'bg-emerald-50/60 text-emerald-800/70',
-  danger: 'bg-red-50/60 text-red-800/70',
-  warning: 'bg-amber-50/60 text-amber-800/70',
+  default: 'bg-sand/60 dark:bg-zinc-800 text-char dark:text-zinc-300',
+  success: 'bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-800/70 dark:text-emerald-400',
+  danger: 'bg-red-50/60 dark:bg-red-950/40 text-red-800/70 dark:text-red-400',
+  warning: 'bg-amber-50/60 dark:bg-amber-950/40 text-amber-800/70 dark:text-amber-400',
 };
 
 const sizes = {

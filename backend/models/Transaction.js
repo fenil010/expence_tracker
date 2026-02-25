@@ -131,6 +131,19 @@ const transactionSchema = new mongoose.Schema({
     default: ''
   },
 
+  // Linked split parent (for split transactions)
+  splitParent: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Transaction',
+    default: null
+  },
+
+  // Whether this is part of a split
+  isSplit: {
+    type: Boolean,
+    default: false
+  },
+
   // Receipt/Attachment
   receipt: {
     filename: String,

@@ -131,19 +131,19 @@ export default function TransactionsPage() {
       {/* Table */}
       <Card padding="p-0">
         {/* Header */}
-        <div className="grid grid-cols-12 gap-4 px-6 py-3.5 border-b border-stone/20 bg-sand/20">
-          <span className="col-span-5 text-xs font-medium text-drift uppercase tracking-wider">Description</span>
-          <span className="col-span-2 text-xs font-medium text-drift uppercase tracking-wider">Category</span>
-          <span className="col-span-2 text-xs font-medium text-drift uppercase tracking-wider">Date</span>
-          <span className="col-span-2 text-xs font-medium text-drift uppercase tracking-wider text-right">Amount</span>
-          <span className="col-span-1 text-xs font-medium text-drift uppercase tracking-wider text-right">Actions</span>
+        <div className="grid grid-cols-12 gap-4 px-6 py-3.5 border-b border-stone/20 dark:border-zinc-800 bg-sand/20 dark:bg-zinc-800/30">
+          <span className="col-span-5 text-xs font-medium text-drift dark:text-zinc-500 uppercase tracking-wider">Description</span>
+          <span className="col-span-2 text-xs font-medium text-drift dark:text-zinc-500 uppercase tracking-wider">Category</span>
+          <span className="col-span-2 text-xs font-medium text-drift dark:text-zinc-500 uppercase tracking-wider">Date</span>
+          <span className="col-span-2 text-xs font-medium text-drift dark:text-zinc-500 uppercase tracking-wider text-right">Amount</span>
+          <span className="col-span-1 text-xs font-medium text-drift dark:text-zinc-500 uppercase tracking-wider text-right">Actions</span>
         </div>
 
         {/* Rows */}
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} columns={5} />)
         ) : filtered.length === 0 ? (
-          <div className="px-6 py-16 text-center text-sm text-drift">
+          <div className="px-6 py-16 text-center text-sm text-drift dark:text-zinc-500">
             No transactions found
           </div>
         ) : (
@@ -158,21 +158,21 @@ export default function TransactionsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.02 }}
-                  className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-sand/20 transition-colors duration-200 border-b border-stone/10 last:border-0"
+                  className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-sand/20 dark:hover:bg-zinc-800/40 transition-colors duration-200 border-b border-stone/10 dark:border-zinc-800/50 last:border-0"
                 >
                   {/* Description */}
                   <div className="col-span-5 flex items-center gap-3">
                     <div className={`
                       w-9 h-9 rounded-xl flex items-center justify-center shrink-0
-                      ${isIncome ? 'bg-emerald-50/60' : 'bg-sand/60'}
+                      ${isIncome ? 'bg-emerald-50/60 dark:bg-emerald-950/40' : 'bg-sand/60 dark:bg-zinc-800'}
                     `}>
                       {isIncome ? (
-                        <ArrowUpRight className="w-4 h-4 text-emerald-700/60" />
+                        <ArrowUpRight className="w-4 h-4 text-emerald-700/60 dark:text-emerald-400" />
                       ) : (
-                        <ArrowDownRight className="w-4 h-4 text-char" />
+                        <ArrowDownRight className="w-4 h-4 text-char dark:text-zinc-400" />
                       )}
                     </div>
-                    <span className="text-sm font-medium text-obsidian truncate">
+                    <span className="text-sm font-medium text-obsidian dark:text-zinc-200 truncate">
                       {tx.description || 'Transaction'}
                     </span>
                   </div>
@@ -183,14 +183,14 @@ export default function TransactionsPage() {
                   </div>
 
                   {/* Date */}
-                  <div className="col-span-2 text-sm text-drift tabular-nums">
+                  <div className="col-span-2 text-sm text-drift dark:text-zinc-400 tabular-nums">
                     {new Date(tx.date).toLocaleDateString('en-US', {
                       month: 'short', day: 'numeric', year: 'numeric',
                     })}
                   </div>
 
                   {/* Amount */}
-                  <div className={`col-span-2 text-sm font-semibold text-right tabular-nums ${isIncome ? 'text-emerald-700/70' : 'text-obsidian'}`}>
+                  <div className={`col-span-2 text-sm font-semibold text-right tabular-nums ${isIncome ? 'text-emerald-700/70 dark:text-emerald-400' : 'text-obsidian dark:text-zinc-200'}`}>
                     {isIncome ? '+' : '-'}${Math.abs(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </div>
 
@@ -198,7 +198,7 @@ export default function TransactionsPage() {
                   <div className="col-span-1 flex justify-end">
                     <button
                       onClick={() => handleDelete(tx._id || tx.id)}
-                      className="p-1.5 rounded-lg text-drift hover:text-red-700/60 hover:bg-red-50/30 transition-all duration-300 cursor-pointer"
+                      className="p-1.5 rounded-lg text-drift dark:text-zinc-500 hover:text-red-700/60 dark:hover:text-red-400 hover:bg-red-50/30 dark:hover:bg-red-950/30 transition-all duration-300 cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

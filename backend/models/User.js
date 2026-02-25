@@ -66,6 +66,22 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: 'America/New_York'
   },
+  theme: {
+    type: String,
+    enum: ['light', 'dark', 'system'],
+    default: 'system'
+  },
+  dateFormat: {
+    type: String,
+    enum: ['MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD'],
+    default: 'MM/DD/YYYY'
+  },
+  fiscalYearStart: {
+    type: Number,
+    min: 1,
+    max: 12,
+    default: 1
+  },
   notificationPreferences: {
     type: notificationPreferencesSchema,
     default: () => ({})
@@ -221,6 +237,9 @@ userSchema.methods.toPublicJSON = function () {
     currency: this.currency,
     language: this.language,
     timezone: this.timezone,
+    theme: this.theme,
+    dateFormat: this.dateFormat,
+    fiscalYearStart: this.fiscalYearStart,
     role: this.role,
     isVerified: this.isVerified,
     notificationPreferences: this.notificationPreferences,
