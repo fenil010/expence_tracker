@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Pencil } from 'lucide-react';
 import { PageWrapper, Card, Button, Modal, Input, Select, Badge } from '../components/ui';
+import SpendingMeter from '../components/ui/SpendingMeter';
+import ConfettiTrigger from '../components/ui/ConfettiTrigger';
+import MultiStepBudgetForm from '../components/budgets/MultiStepBudgetForm';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import { toast } from '../components/ui/Toast';
 import { budgetApi, categoryApi } from '../services/api';
@@ -13,6 +16,16 @@ export default function BudgetsPage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ category: '', amount: '', period: 'monthly' });
   const [saving, setSaving] = useState(false);
+
+  // Get confetti enabled preference
+  const [confettiEnabled, setConfettiEnabled] = useState(() => {
+    try {
+      const stored = localStorage.getItem('confettiEnabled');
+      return stored !== 'false';
+    } catch {
+      return true;
+    }
+  });
 
   const fetchBudgets = async () => {
     try {
@@ -100,6 +113,9 @@ export default function BudgetsPage() {
         </Button>
       }
     >
+      {/* Confetti Trigger */}
+      <ConfettiTrigger budgets={budgets} enabled={confettiEnabled} />
+
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}
@@ -129,6 +145,7 @@ export default function BudgetsPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  whileHover={{ y: -4, scale: 1.02 }}
                 >
                   <Card className="h-full">
                     <div className="flex items-start justify-between mb-5">
@@ -147,32 +164,13 @@ export default function BudgetsPage() {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-end justify-between">
-                        <span className="text-2xl font-semibold text-obsidian dark:text-white tabular-nums">
-                          ${spent.toLocaleString()}
-                        </span>
-                        <span className="text-sm text-drift dark:text-zinc-500 tabular-nums">
-                          of ${limit.toLocaleString()}
-                        </span>
-                      </div>
-
-                      {/* Progress bar */}
-                      <div className="h-2.5 bg-sand dark:bg-zinc-800 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${progress}%` }}
-                          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.2 }}
-                          className={`h-full rounded-full ${isOver ? 'bg-red-400/60' : 'bg-obsidian dark:bg-white'}`}
-                        />
-                      </div>
-
-                      <p className="text-xs text-drift dark:text-zinc-400">
-                        {isOver ? (
-                          <span className="text-red-700/60 dark:text-red-400">Over budget by ${(spent - limit).toLocaleString()}</span>
-                        ) : (
-                          <span>${(limit - spent).toLocaleString()} remaining</span>
-                        )}
-                      </p>
+                      <SpendingMeter
+                        spent={spent}
+                        limit={limit}
+                        category={null}
+                        size="md"
+                        showLabels={true}
+                      />
                     </div>
                   </Card>
                 </motion.div>
@@ -184,39 +182,13 @@ export default function BudgetsPage() {
 
       {/* Create Budget Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create Budget">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <Select
-            label="Category"
-            placeholder="Select category"
-            value={form.category}
-            onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-            options={categories.map((c) => ({ value: c._id || c.name, label: c.name }))}
-          />
-          <Input
-            label="Budget Amount"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0.00"
-            value={form.amount}
-            onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
-            required
-          />
-          <Select
-            label="Period"
-            value={form.period}
-            onChange={(e) => setForm((p) => ({ ...p, period: e.target.value }))}
-            options={[
-              { value: 'weekly', label: 'Weekly' },
-              { value: 'monthly', label: 'Monthly' },
-              { value: 'yearly', label: 'Yearly' },
-            ]}
-          />
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="ghost" type="button" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button type="submit" loading={saving}>Create Budget</Button>
-          </div>
-        </form>
+        <MultiStepBudgetForm
+          categories={categories}
+          form={form}
+          setForm={setForm}
+          onSubmit={handleSubmit}
+          saving={saving}
+        />
       </Modal>
     </PageWrapper>
   );

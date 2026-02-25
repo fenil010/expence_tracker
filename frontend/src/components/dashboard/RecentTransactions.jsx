@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card } from '../ui';
+import { formatCurrency } from '../../utils/currencies';
 
 const container = {
   hidden: {},
@@ -70,7 +71,7 @@ export default function RecentTransactions({ transactions = [], className = '' }
                       </div>
                     </div>
                     <span className={`text-sm font-semibold tabular-nums ${isIncome ? 'text-emerald-700/70 dark:text-emerald-400' : 'text-obsidian dark:text-zinc-200'}`}>
-                      {isIncome ? '+' : '-'}${Math.abs(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      {isIncome ? '+' : '-'}{formatCurrency(Math.abs(tx.amount), tx.currency || 'USD')}
                     </span>
                   </motion.div>
                 );

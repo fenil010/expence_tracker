@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal, Input, Select, Button, Toggle } from './ui';
 import { toast } from './ui/Toast';
 import { transactionApi, categoryApi } from '../services/api';
+import { CURRENCIES, getDefaultCurrency } from '../utils/currencies';
 
 const defaultForm = {
   type: 'expense',
@@ -10,6 +11,7 @@ const defaultForm = {
   category: '',
   date: new Date().toISOString().split('T')[0],
   account: '',
+  currency: getDefaultCurrency(),
 };
 
 export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
@@ -35,15 +37,33 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.amount || !form.description) return;
+    if (!form.amount || !form.description || !form.category) {
+      toast('Please fill in all required fields', 'error');
+      return;
+    }
 
     setLoading(true);
     try {
-      await transactionApi.create({
-        ...form,
+      const payload = {
+        type: form.type,
         amount: parseFloat(form.amount),
-      });
+        description: form.description,
+        category: form.category,
+        date: form.date,
+        currency: form.currency,
+      };
+      
+      // Only include account if it's not empty
+      if (form.account) {
+        payload.account = form.account;
+      }
+      
+      await transactionApi.create(payload);
       toast('Transaction added successfully', 'success');
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('transactionAdded'));
+      
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -56,6 +76,11 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
   const categoryOptions = categories
     .filter((c) => !c.type || c.type === form.type)
     .map((c) => ({ value: c._id || c.name, label: c.name }));
+
+  const currencyOptions = CURRENCIES.map((c) => ({
+    value: c.code,
+    label: `${c.symbol} ${c.code} - ${c.name}`
+  }));
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add Transaction">
@@ -73,16 +98,24 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
         </div>
 
         {/* Amount */}
-        <Input
-          label="Amount"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-          value={form.amount}
-          onChange={(e) => handleChange('amount', e.target.value)}
-          required
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Amount"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="0.00"
+            value={form.amount}
+            onChange={(e) => handleChange('amount', e.target.value)}
+            required
+          />
+          <Select
+            label="Currency"
+            value={form.currency}
+            onChange={(e) => handleChange('currency', e.target.value)}
+            options={currencyOptions}
+          />
+        </div>
 
         {/* Description */}
         <Input
@@ -100,6 +133,7 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
           value={form.category}
           onChange={(e) => handleChange('category', e.target.value)}
           options={categoryOptions}
+          required
         />
 
         {/* Date */}

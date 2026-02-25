@@ -155,14 +155,14 @@ export default function LoginPage() {
               disabled={loading}
               className="
                 w-full flex items-center justify-center gap-2
-                py-3 bg-obsidian dark:bg-white text-parchment dark:text-zinc-900
+                py-3 bg-[var(--color-accent)] text-white
                 text-sm font-medium rounded-xl
                 hover:opacity-90 transition-all duration-300
                 disabled:opacity-40 cursor-pointer
               "
             >
               {loading ? (
-                <span className="w-4 h-4 border-2 border-parchment dark:border-zinc-900 border-t-transparent rounded-full animate-spin" />
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
                   {isLogin ? 'Sign In' : 'Create Account'}
@@ -180,7 +180,7 @@ export default function LoginPage() {
                 setIsLogin(!isLogin);
                 setError('');
               }}
-              className="text-obsidian dark:text-white font-medium hover:underline underline-offset-4 cursor-pointer transition-all duration-200"
+              className="text-[var(--color-accent)] font-medium hover:underline underline-offset-4 cursor-pointer transition-all duration-200"
             >
               {isLogin ? 'Sign up' : 'Sign in'}
             </button>

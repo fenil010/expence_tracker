@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Wallet, DollarSign, CreditCard } from 'lucide-react';
+import { formatCurrency, getDefaultCurrency } from '../../utils/currencies';
+import { useCountUp } from '../../hooks/useCountUp';
 
 const container = {
   hidden: {},
@@ -20,6 +22,10 @@ const iconMap = {
 function StatCard({ label, amount, change, type }) {
   const isPositive = type === 'income' || (change && change > 0);
   const Icon = iconMap[type] || Wallet;
+  const currency = getDefaultCurrency();
+  
+  // Count-up animation for the amount
+  const animatedAmount = useCountUp(typeof amount === 'number' ? amount : 0, 1200);
 
   return (
     <motion.div
@@ -34,8 +40,8 @@ function StatCard({ label, amount, change, type }) {
           <Icon className="w-4 h-4 text-char dark:text-zinc-300" strokeWidth={1.8} />
         </div>
       </div>
-      <div className="text-2xl font-semibold text-obsidian dark:text-white tracking-tight">
-        ${typeof amount === 'number' ? amount.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '0.00'}
+      <div className="text-2xl font-semibold text-obsidian dark:text-white tracking-tight tabular-nums">
+        {formatCurrency(animatedAmount, currency)}
       </div>
       {change !== undefined && change !== null && (
         <div className="mt-3 flex items-center gap-1.5">

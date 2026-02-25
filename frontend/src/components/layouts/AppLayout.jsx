@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
@@ -9,6 +9,16 @@ import { ToastContainer } from '../ui/Toast';
 
 export default function AppLayout() {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+
+  // Listen for openAddTransaction event from quick actions
+  useEffect(() => {
+    const handleOpenAddTransaction = () => {
+      setShowAddTransaction(true);
+    };
+
+    window.addEventListener('openAddTransaction', handleOpenAddTransaction);
+    return () => window.removeEventListener('openAddTransaction', handleOpenAddTransaction);
+  }, []);
 
   return (
     <div className="min-h-screen bg-parchment dark:bg-zinc-950 transition-colors duration-300">

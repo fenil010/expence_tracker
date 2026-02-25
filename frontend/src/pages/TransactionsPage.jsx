@@ -8,38 +8,84 @@ import { TableRowSkeleton } from '../components/ui/Skeleton';
 import { toast } from '../components/ui/Toast';
 import { transactionApi, categoryApi } from '../services/api';
 import AddTransactionModal from '../components/AddTransactionModal';
+import SwipeableTransactionRow from '../components/SwipeableTransactionRow';
+import { formatCurrency } from '../utils/currencies';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [filters, setFilters] = useState({ type: '', category: '', search: '' });
   const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 20;
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = async (pageNum = 1, append = false) => {
     try {
-      const params = { sort: '-date', limit: 50 };
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+      
+      const params = { sort: '-date', limit: LIMIT, skip: (pageNum - 1) * LIMIT };
       if (filters.type) params.type = filters.type;
       if (filters.category) params.category = filters.category;
+      
       const res = await transactionApi.getAll(params);
-      setTransactions(res.data?.transactions || res.data || []);
+      const newTransactions = res.data?.transactions || res.data || [];
+      
+      if (append) {
+        setTransactions(prev => [...prev, ...newTransactions]);
+      } else {
+        setTransactions(newTransactions);
+      }
+      
+      setHasMore(newTransactions.length === LIMIT);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchTransactions(nextPage, true);
+    }
+  };
+
+  // Infinite scroll
+  useInfiniteScroll(loadMore, hasMore, loadingMore);
 
   useEffect(() => {
     fetchTransactions();
     categoryApi.getAll().then((res) => {
       setCategories(Array.isArray(res.data) ? res.data : []);
     }).catch(() => {});
+
+    // Listen for transaction added events from global modal
+    const handleTransactionAdded = () => {
+      fetchTransactions();
+    };
+
+    window.addEventListener('transactionAdded', handleTransactionAdded);
+    return () => window.removeEventListener('transactionAdded', handleTransactionAdded);
   }, []);
 
   useEffect(() => {
-    if (!loading) fetchTransactions();
+    if (!loading) {
+      setPage(1);
+      setHasMore(true);
+      fetchTransactions(1, false);
+    }
   }, [filters.type, filters.category]);
 
   const handleDelete = async (id) => {
@@ -147,66 +193,32 @@ export default function TransactionsPage() {
             No transactions found
           </div>
         ) : (
-          <AnimatePresence>
-            {filtered.map((tx, index) => {
-              const isIncome = tx.type === 'income';
-              return (
-                <motion.div
+          <>
+            <AnimatePresence>
+              {filtered.map((tx, index) => (
+                <SwipeableTransactionRow
                   key={tx._id || tx.id}
-                  layout
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.02 }}
-                  className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-sand/20 dark:hover:bg-zinc-800/40 transition-colors duration-200 border-b border-stone/10 dark:border-zinc-800/50 last:border-0"
-                >
-                  {/* Description */}
-                  <div className="col-span-5 flex items-center gap-3">
-                    <div className={`
-                      w-9 h-9 rounded-xl flex items-center justify-center shrink-0
-                      ${isIncome ? 'bg-emerald-50/60 dark:bg-emerald-950/40' : 'bg-sand/60 dark:bg-zinc-800'}
-                    `}>
-                      {isIncome ? (
-                        <ArrowUpRight className="w-4 h-4 text-emerald-700/60 dark:text-emerald-400" />
-                      ) : (
-                        <ArrowDownRight className="w-4 h-4 text-char dark:text-zinc-400" />
-                      )}
-                    </div>
-                    <span className="text-sm font-medium text-obsidian dark:text-zinc-200 truncate">
-                      {tx.description || 'Transaction'}
-                    </span>
-                  </div>
-
-                  {/* Category */}
-                  <div className="col-span-2">
-                    <Badge>{tx.category?.name || tx.category || '—'}</Badge>
-                  </div>
-
-                  {/* Date */}
-                  <div className="col-span-2 text-sm text-drift dark:text-zinc-400 tabular-nums">
-                    {new Date(tx.date).toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric', year: 'numeric',
-                    })}
-                  </div>
-
-                  {/* Amount */}
-                  <div className={`col-span-2 text-sm font-semibold text-right tabular-nums ${isIncome ? 'text-emerald-700/70 dark:text-emerald-400' : 'text-obsidian dark:text-zinc-200'}`}>
-                    {isIncome ? '+' : '-'}${Math.abs(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="col-span-1 flex justify-end">
-                    <button
-                      onClick={() => handleDelete(tx._id || tx.id)}
-                      className="p-1.5 rounded-lg text-drift dark:text-zinc-500 hover:text-red-700/60 dark:hover:text-red-400 hover:bg-red-50/30 dark:hover:bg-red-950/30 transition-all duration-300 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                  tx={tx}
+                  index={index}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </AnimatePresence>
+            
+            {/* Loading more indicator */}
+            {loadingMore && (
+              <div className="px-6 py-4">
+                <TableRowSkeleton columns={5} />
+              </div>
+            )}
+            
+            {/* End of list indicator */}
+            {!hasMore && filtered.length > 0 && (
+              <div className="px-6 py-4 text-center text-xs text-drift dark:text-zinc-500">
+                No more transactions
+              </div>
+            )}
+          </>
         )}
       </Card>
 

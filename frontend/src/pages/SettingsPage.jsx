@@ -1,15 +1,21 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Bell, Shield, Palette, Trash2 } from 'lucide-react';
-import { PageWrapper, Card, Button, Input, Toggle } from '../components/ui';
+import { User, Bell, Shield, Palette, Trash2, DollarSign } from 'lucide-react';
+import { PageWrapper, Card, Button, Input, Toggle, Select } from '../components/ui';
+import ThemeSelector from '../components/ui/ThemeSelector';
+import AccentColorPicker from '../components/ui/AccentColorPicker';
+import ConfettiToggle from '../components/ui/ConfettiToggle';
 import { toast } from '../components/ui/Toast';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { authApi } from '../services/api';
+import { CURRENCIES, getDefaultCurrency, setDefaultCurrency } from '../utils/currencies';
 
 export default function SettingsPage() {
-  const { user, updateProfile, logout } = useAuth();
+  const { user, logout } = useAuth();
+  const { accentColor, colorScheme, setAccentColor, setColorScheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
-  const [currencyFormat, setCurrencyFormat] = useState('USD');
+  const [defaultCurrency, setDefaultCurrencyState] = useState(getDefaultCurrency());
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -48,12 +54,16 @@ export default function SettingsPage() {
     }
   };
 
-  const sections = [
-    { icon: User, label: 'Account' },
-    { icon: Bell, label: 'Notifications' },
-    { icon: Shield, label: 'Security' },
-    { icon: Palette, label: 'Preferences' },
-  ];
+  const handleCurrencyChange = (newCurrency) => {
+    setDefaultCurrencyState(newCurrency);
+    setDefaultCurrency(newCurrency);
+    toast('Default currency updated', 'success');
+  };
+
+  const currencyOptions = CURRENCIES.map((c) => ({
+    value: c.code,
+    label: `${c.symbol} ${c.code} - ${c.name}`
+  }));
 
   return (
     <PageWrapper title="Settings" subtitle="Manage your account preferences">
@@ -164,6 +174,62 @@ export default function SettingsPage() {
               </div>
               <Button type="submit" loading={saving}>Update Password</Button>
             </form>
+          </Card>
+        </motion.div>
+
+        {/* Preferences */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.25 }}
+        >
+          <Card>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-lg bg-sand/60 dark:bg-zinc-800 flex items-center justify-center">
+                <Palette className="w-4 h-4 text-char dark:text-zinc-300" />
+              </div>
+              <h3 className="text-base font-semibold text-obsidian dark:text-white">Preferences</h3>
+            </div>
+
+            <div className="space-y-6">
+              {/* Theme Mode Selector */}
+              <div>
+                <p className="text-sm font-medium text-char dark:text-zinc-200 mb-2">Theme Mode</p>
+                <p className="text-xs text-drift dark:text-zinc-500 mb-4">Choose light, dark, or system theme</p>
+                <ThemeSelector />
+              </div>
+
+              {/* Default Currency */}
+              <div className="pt-6 border-t border-stone/20 dark:border-zinc-800">
+                <div className="flex items-center gap-3 mb-3">
+                  <DollarSign className="w-4 h-4 text-char dark:text-zinc-300" />
+                  <p className="text-sm font-medium text-char dark:text-zinc-200">Default Currency</p>
+                </div>
+                <p className="text-xs text-drift dark:text-zinc-500 mb-4">
+                  Choose your preferred currency for new transactions
+                </p>
+                <Select
+                  value={defaultCurrency}
+                  onChange={(e) => handleCurrencyChange(e.target.value)}
+                  options={currencyOptions}
+                />
+              </div>
+
+              {/* Accent Color Picker */}
+              <div className="pt-6 border-t border-stone/20 dark:border-zinc-800">
+                <AccentColorPicker
+                  accentColor={accentColor}
+                  colorScheme={colorScheme}
+                  onAccentChange={setAccentColor}
+                  onSchemeChange={setColorScheme}
+                />
+              </div>
+
+              {/* Confetti Toggle */}
+              <div className="pt-6 border-t border-stone/20 dark:border-zinc-800">
+                <ConfettiToggle />
+              </div>
+            </div>
           </Card>
         </motion.div>
 

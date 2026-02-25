@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Target, Trash2 } from 'lucide-react';
+import { Plus, Target, Trash2, Award } from 'lucide-react';
 import { PageWrapper, Card, Button, Modal, Input } from '../components/ui';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import { toast } from '../components/ui/Toast';
 import { goalApi } from '../services/api';
+import { formatCurrency, getDefaultCurrency } from '../utils/currencies';
+import CircularProgress from '../components/goals/CircularProgress';
+import NumberInput from '../components/goals/NumberInput';
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState([]);
@@ -25,6 +28,8 @@ export default function GoalsPage() {
       setLoading(false);
     }
   };
+
+  const currency = getDefaultCurrency();
 
   useEffect(() => {
     fetchGoals();
@@ -110,6 +115,9 @@ export default function GoalsPage() {
               const target = goal.targetAmount || goal.target || 0;
               const progress = target > 0 ? Math.min((saved / target) * 100, 100) : 0;
               const isComplete = progress >= 100;
+              
+              // Calculate milestones (25%, 50%, 75%, 100%)
+              const milestones = [25, 50, 75, 100];
 
               return (
                 <motion.div
@@ -119,12 +127,17 @@ export default function GoalsPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  whileHover={{ y: -4, scale: 1.02 }}
                 >
                   <Card className="h-full">
                     <div className="flex items-start justify-between mb-5">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-sand/60 dark:bg-zinc-800 flex items-center justify-center">
-                          <Target className="w-5 h-5 text-char dark:text-zinc-300" />
+                          {isComplete ? (
+                            <Award className="w-5 h-5 text-emerald-700/60 dark:text-emerald-400" />
+                          ) : (
+                            <Target className="w-5 h-5 text-char dark:text-zinc-300" />
+                          )}
                         </div>
                         <div>
                           <h3 className="font-semibold text-obsidian dark:text-white text-sm">{goal.name}</h3>
@@ -143,23 +156,59 @@ export default function GoalsPage() {
                       </button>
                     </div>
 
+                    {/* Circular Progress */}
+                    <div className="flex justify-center mb-5">
+                      <CircularProgress 
+                        progress={progress}
+                        size={100}
+                        strokeWidth={8}
+                        color={isComplete ? '#059669' : '#3D3830'}
+                      />
+                    </div>
+
                     <div className="space-y-3">
                       <div className="flex items-end justify-between">
-                        <span className="text-2xl font-semibold text-obsidian dark:text-white tabular-nums">
-                          ${saved.toLocaleString()}
+                        <span className="text-xl font-semibold text-obsidian dark:text-white tabular-nums">
+                          {formatCurrency(saved, currency)}
                         </span>
                         <span className="text-sm text-drift dark:text-zinc-500 tabular-nums">
-                          of ${target.toLocaleString()}
+                          of {formatCurrency(target, currency)}
                         </span>
                       </div>
 
-                      <div className="h-2.5 bg-sand dark:bg-zinc-800 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${progress}%` }}
-                          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.2 }}
-                          className={`h-full rounded-full ${isComplete ? 'bg-emerald-600/60' : 'bg-obsidian dark:bg-white'}`}
-                        />
+                      {/* Progress bar with milestone markers */}
+                      <div className="relative">
+                        <div className="h-2.5 bg-sand dark:bg-zinc-800 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progress}%` }}
+                            transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.2 }}
+                            className={`h-full rounded-full ${isComplete ? 'bg-emerald-600/60' : 'bg-[var(--color-accent)]'}`}
+                          />
+                        </div>
+                        
+                        {/* Milestone markers */}
+                        <div className="absolute inset-0 flex justify-between px-1">
+                          {milestones.slice(0, -1).map((milestone) => (
+                            <motion.div
+                              key={milestone}
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ 
+                                scale: progress >= milestone ? 1 : 0.6,
+                                opacity: progress >= milestone ? 1 : 0.3
+                              }}
+                              transition={{ duration: 0.3, delay: 0.5 }}
+                              className={`
+                                w-1.5 h-1.5 rounded-full -mt-0.5
+                                ${progress >= milestone 
+                                  ? 'bg-emerald-600 dark:bg-emerald-400' 
+                                  : 'bg-drift dark:bg-zinc-600'
+                                }
+                              `}
+                              style={{ marginLeft: `${milestone}%` }}
+                            />
+                          ))}
+                        </div>
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -225,11 +274,10 @@ export default function GoalsPage() {
         title={`Contribute to ${showContributeModal?.name || 'Goal'}`}
       >
         <form onSubmit={handleContribute} className="space-y-5">
-          <Input
+          <NumberInput
             label="Amount"
-            type="number"
-            step="0.01"
-            min="0"
+            step={10}
+            min={0}
             placeholder="0.00"
             value={contributeAmount}
             onChange={(e) => setContributeAmount(e.target.value)}

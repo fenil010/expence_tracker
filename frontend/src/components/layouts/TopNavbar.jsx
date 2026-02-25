@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Bell, ChevronDown, Command } from 'lucide-react';
+import { Plus, Search, Bell, ChevronDown, Command, Sun, Moon, Monitor } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const pageTitles = {
   '/': 'Dashboard',
@@ -14,13 +15,17 @@ const pageTitles = {
   '/profile': 'Profile',
 };
 
+const themeIcons = { light: Sun, dark: Moon, system: Monitor };
+
 export default function TopNavbar({ onAddTransaction }) {
   const { pathname } = useLocation();
   const { user } = useAuth();
+  const { mode, toggleTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const title = pageTitles[pathname] || 'Dashboard';
+  const ThemeIcon = themeIcons[mode];
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -78,20 +83,32 @@ export default function TopNavbar({ onAddTransaction }) {
             <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-obsidian dark:bg-white rounded-full" />
           </motion.button>
 
+          {/* Theme Toggle */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={toggleTheme}
+            className="p-2.5 rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand/50 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer"
+            title={`Current theme: ${mode}`}
+          >
+            <ThemeIcon className="w-[18px] h-[18px]" strokeWidth={1.8} />
+          </motion.button>
+
           {/* Add Transaction */}
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={onAddTransaction}
             className="
-              flex items-center gap-2 px-4 py-2
-              bg-obsidian dark:bg-white text-parchment dark:text-zinc-900 text-sm font-medium
-              rounded-xl hover:opacity-90
+              flex items-center gap-2 px-4 py-2 whitespace-nowrap
+              bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent)]/90
+              text-linen dark:text-white text-sm font-medium
+              rounded-xl hover:shadow-lg hover:shadow-[var(--color-accent)]/20
               transition-all duration-300 cursor-pointer
             "
           >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add Transaction</span>
+            <Plus className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline flex-shrink-0">Add Transaction</span>
           </motion.button>
 
           {/* Avatar dropdown */}

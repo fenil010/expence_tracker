@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 /* ── Tailwind v4 Theme ─────────────────── */
 @theme {
   /* Colors — Light palette */
@@ -10,6 +12,12 @@
   --color-drift: #8A8275;
   --color-char: #3D3830;
   --color-obsidian: #1A1714;
+
+  /* Accent colors (set dynamically by ThemeContext) */
+  --color-accent: #1A1714;
+  --color-accent-secondary: #3D3830;
+  --color-accent-alpha: rgba(26, 23, 20, 0.1);
+  --color-accent-rgb: 26, 23, 20;
 
   /* Fonts */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
@@ -133,12 +141,13 @@
 
   /* Focus */
   *:focus-visible {
-    outline: 2px solid var(--color-stone);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
     border-radius: 4px;
+    transition: outline-color 0.3s ease;
   }
   .dark *:focus-visible {
-    outline-color: #52525b;
+    outline-color: var(--color-accent);
   }
 
   /* Input Resets */
@@ -176,6 +185,21 @@
   );
   background-size: 200% 100%;
   animation: shimmer 1.8s infinite linear;
+}
+
+@utility accent-color {
+  color: var(--color-accent);
+  transition: color 0.3s ease;
+}
+
+@utility accent-bg {
+  background-color: var(--color-accent);
+  transition: background-color 0.3s ease;
+}
+
+@utility accent-border {
+  border-color: var(--color-accent);
+  transition: border-color 0.3s ease;
 }
 
 /* Dark mode skeleton shimmer */

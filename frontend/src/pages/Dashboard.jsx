@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { PageWrapper, CardSkeleton, ChartSkeleton } from '../components/ui';
+import SpendingMeter from '../components/ui/SpendingMeter';
 import BalanceCards from '../components/dashboard/BalanceCards';
 import SpendingChart from '../components/dashboard/SpendingChart';
 import CategoryBreakdown from '../components/dashboard/CategoryBreakdown';
 import RecentTransactions from '../components/dashboard/RecentTransactions';
+import QuickActionButton from '../components/dashboard/QuickActionButton';
 import { reportApi, transactionApi } from '../services/api';
 
 export default function Dashboard() {
@@ -11,22 +13,31 @@ export default function Dashboard() {
   const [dashboard, setDashboard] = useState(null);
   const [transactions, setTransactions] = useState([]);
 
+  const fetchData = async () => {
+    try {
+      const [dashRes, txRes] = await Promise.all([
+        reportApi.getDashboard(),
+        transactionApi.getAll({ limit: 6, sort: '-date' }),
+      ]);
+      setDashboard(dashRes.data);
+      setTransactions(txRes.data?.transactions || txRes.data || []);
+    } catch (err) {
+      console.error('Dashboard fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [dashRes, txRes] = await Promise.all([
-          reportApi.getDashboard(),
-          transactionApi.getAll({ limit: 6, sort: '-date' }),
-        ]);
-        setDashboard(dashRes.data);
-        setTransactions(txRes.data?.transactions || txRes.data || []);
-      } catch (err) {
-        console.error('Dashboard fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
+
+    // Listen for transaction added events
+    const handleTransactionAdded = () => {
+      fetchData();
+    };
+
+    window.addEventListener('transactionAdded', handleTransactionAdded);
+    return () => window.removeEventListener('transactionAdded', handleTransactionAdded);
   }, []);
 
   if (loading) {
@@ -48,6 +59,7 @@ export default function Dashboard() {
   const balance = dashboard?.totalBalance || 0;
   const income = dashboard?.currentMonth?.income || 0;
   const expenses = dashboard?.currentMonth?.expenses || 0;
+  const monthlyBudget = dashboard?.monthlyBudget || income; // Use income as default budget if not set
   const monthlyData = dashboard?.recentTransactions?.map(tx => ({
     name: new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     amount: tx.amount || 0,
@@ -70,12 +82,33 @@ export default function Dashboard() {
         }}
       />
 
+      {/* Monthly Budget Health */}
+      {monthlyBudget > 0 && (
+        <div className="mb-6">
+          <SpendingMeter
+            spent={expenses}
+            limit={monthlyBudget}
+            category="Monthly Budget"
+            size="lg"
+            showLabels={true}
+          />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <SpendingChart data={monthlyData} className="lg:col-span-3" />
         <CategoryBreakdown data={categoryData} className="lg:col-span-2" />
       </div>
 
       <RecentTransactions transactions={transactions} />
+      
+      {/* Quick Action Floating Button */}
+      <QuickActionButton 
+        onAddTransaction={() => {
+          // Trigger global add transaction modal
+          window.dispatchEvent(new CustomEvent('openAddTransaction'));
+        }}
+      />
     </PageWrapper>
   );
 }
