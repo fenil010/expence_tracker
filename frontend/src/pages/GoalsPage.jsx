@@ -18,7 +18,7 @@ export default function GoalsPage() {
   const fetchGoals = async () => {
     try {
       const res = await goalApi.getAll();
-      setGoals(res.data || []);
+      setGoals(res.data?.goals || res.data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -38,7 +38,7 @@ export default function GoalsPage() {
       await goalApi.create({
         name: form.name,
         targetAmount: parseFloat(form.targetAmount),
-        deadline: form.deadline || undefined,
+        targetDate: form.deadline || undefined,
       });
       toast('Goal created', 'success');
       setShowCreateModal(false);

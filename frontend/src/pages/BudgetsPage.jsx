@@ -29,7 +29,7 @@ export default function BudgetsPage() {
     fetchBudgets();
     categoryApi.getAll('expense').then((res) => {
       setCategories(Array.isArray(res.data) ? res.data : []);
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const handleSubmit = async (e) => {
@@ -37,10 +37,37 @@ export default function BudgetsPage() {
     if (!form.amount) return;
     setSaving(true);
     try {
+      // Compute date range based on period
+      const now = new Date();
+      let startDate, endDate;
+      if (form.period === 'weekly') {
+        const dayOfWeek = now.getDay();
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - dayOfWeek);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+      } else if (form.period === 'yearly') {
+        startDate = new Date(now.getFullYear(), 0, 1);
+        endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+      } else {
+        // monthly (default)
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      }
+
+      // Find category name for the budget name
+      const selectedCat = categories.find(c => (c._id || c.name) === form.category);
+      const budgetName = selectedCat ? `${selectedCat.name} Budget` : `${form.period.charAt(0).toUpperCase() + form.period.slice(1)} Budget`;
+
       await budgetApi.create({
-        category: form.category,
+        name: budgetName,
+        type: form.period === 'yearly' ? 'yearly' : form.period === 'weekly' ? 'custom' : 'monthly',
+        category: form.category || undefined,
         amount: parseFloat(form.amount),
-        period: form.period,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
       });
       toast('Budget created', 'success');
       setShowModal(false);

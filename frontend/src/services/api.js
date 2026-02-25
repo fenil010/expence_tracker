@@ -4,7 +4,7 @@
  * Includes automatic token refresh for expired access tokens.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
 
 class ApiService {
   constructor() {
@@ -111,7 +111,7 @@ class ApiService {
 
     const options = { method, headers: this.getHeaders() };
 
-    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) {
       options.body = JSON.stringify(data);
     }
 
@@ -171,6 +171,7 @@ export const authApi = {
   changePassword: (data) => api.put('/auth/password', data),
   forgotPassword: (data) => api.post('/auth/forgot-password', data),
   resetPassword: (token, data) => api.post(`/auth/reset-password/${token}`, data),
+  deleteAccount: () => api.delete('/users/account'),
 };
 
 export const transactionApi = {

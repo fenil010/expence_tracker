@@ -41,7 +41,7 @@ export default function SettingsPage() {
   const handleDeleteAccount = async () => {
     if (!window.confirm('Are you sure? This action is permanent and cannot be undone.')) return;
     try {
-      await authApi.updateProfile({ deleted: true });
+      await authApi.deleteAccount();
       logout();
     } catch (err) {
       toast('Failed to delete account', 'error');
@@ -118,7 +118,7 @@ export default function SettingsPage() {
                   <p className="text-sm font-medium text-char dark:text-zinc-200">Weekly Summary</p>
                   <p className="text-xs text-drift dark:text-zinc-500">Receive weekly spending report</p>
                 </div>
-                <Toggle checked={false} onChange={() => {}} />
+                <Toggle checked={false} onChange={() => { }} />
               </div>
             </div>
           </Card>

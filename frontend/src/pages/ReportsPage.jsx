@@ -49,12 +49,35 @@ export default function ReportsPage() {
           reportApi.getTrends(),
         ]);
 
-        const mData = monthly.data || [];
-        setMonthlyData(Array.isArray(mData) ? mData : []);
+        // Monthly report returns { period, summary, categoryBreakdown, dailyTrend, topMerchants }
+        const mData = monthly.data || {};
+        // Map dailyTrend to chart shape: { name, amount }
+        const dailyTrend = (mData.dailyTrend || []).map(d => ({
+          name: `Day ${d.day}`,
+          amount: (d.expense || 0) + (d.income || 0),
+        }));
+        setMonthlyData(dailyTrend);
 
+        // Trends returns { months, trends: [{ year, month, income, expense, net, savingsRate }] }
         const tData = trends.data || {};
-        setTrendData(tData.monthly || tData.trends || []);
-        setCategoryData(tData.categories || tData.categoryBreakdown || []);
+        const trendItems = (tData.trends || []).map(t => {
+          const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          return {
+            name: `${monthNames[t.month] || t.month} ${t.year}`,
+            income: t.income || 0,
+            expenses: t.expense || 0,
+            expense: t.expense || 0,
+            net: t.net || 0,
+          };
+        });
+        setTrendData(trendItems);
+
+        // Category data from monthly report
+        const catData = (mData.categoryBreakdown || []).map(c => ({
+          name: c.name || c.categoryName || 'Other',
+          value: c.total || 0,
+        }));
+        setCategoryData(catData);
       } catch (err) {
         console.error('Reports fetch error:', err);
       } finally {

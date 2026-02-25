@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authApi } from '../services/api';
+import api, { authApi } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -12,11 +12,17 @@ export function AuthProvider({ children }) {
     const initAuth = async () => {
       const token = localStorage.getItem('authToken');
       if (token) {
+        api.setToken(token);
+        const refresh = localStorage.getItem('refreshToken');
+        if (refresh) api.setRefreshToken(refresh);
         try {
           const response = await authApi.getProfile();
           setUser(response.data);
         } catch (err) {
+          api.setToken(null);
+          api.setRefreshToken(null);
           localStorage.removeItem('authToken');
+          localStorage.removeItem('refreshToken');
         }
       }
       setLoading(false);
@@ -28,6 +34,8 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const response = await authApi.login({ email, password });
+      api.setToken(response.data.token);
+      api.setRefreshToken(response.data.refreshToken);
       setUser(response.data.user);
       return response.data;
     } catch (err) {
@@ -40,6 +48,8 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const response = await authApi.register(data);
+      api.setToken(response.data.token);
+      api.setRefreshToken(response.data.refreshToken);
       setUser(response.data.user);
       return response.data;
     } catch (err) {
@@ -53,7 +63,8 @@ export function AuthProvider({ children }) {
       await authApi.logout();
     } finally {
       setUser(null);
-      localStorage.removeItem('authToken');
+      api.setToken(null);
+      api.setRefreshToken(null);
     }
   }, []);
 

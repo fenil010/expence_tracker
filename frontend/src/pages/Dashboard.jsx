@@ -45,11 +45,17 @@ export default function Dashboard() {
     );
   }
 
-  const balance = dashboard?.balance || dashboard?.totalBalance || 0;
-  const income = dashboard?.income || dashboard?.totalIncome || 0;
-  const expenses = dashboard?.expenses || dashboard?.totalExpenses || 0;
-  const monthlyData = dashboard?.monthlyTrend || dashboard?.monthly || [];
-  const categoryData = dashboard?.categoryBreakdown || dashboard?.categories || [];
+  const balance = dashboard?.totalBalance || 0;
+  const income = dashboard?.currentMonth?.income || 0;
+  const expenses = dashboard?.currentMonth?.expenses || 0;
+  const monthlyData = dashboard?.recentTransactions?.map(tx => ({
+    name: new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    amount: tx.amount || 0,
+  })) || [];
+  const categoryData = (dashboard?.categoryBreakdown || []).map(c => ({
+    name: c.categoryName || c.name || 'Other',
+    value: c.total || c.value || 0,
+  }));
 
   return (
     <PageWrapper title="Dashboard" subtitle="Your financial overview">
@@ -58,9 +64,9 @@ export default function Dashboard() {
         income={income}
         expenses={expenses}
         changes={{
-          balance: dashboard?.balanceChange,
-          income: dashboard?.incomeChange,
-          expenses: dashboard?.expenseChange,
+          balance: null,
+          income: dashboard?.comparison?.incomeChange,
+          expenses: dashboard?.comparison?.expenseChange,
         }}
       />
 
