@@ -14,7 +14,12 @@ import { CURRENCIES, getDefaultCurrency, setDefaultCurrency } from '../utils/cur
 export default function SettingsPage() {
   const { user, logout } = useAuth();
   const { accentColor, colorScheme, setAccentColor, setColorScheme } = useTheme();
-  const [notifications, setNotifications] = useState(true);
+  const [notifications, setNotifications] = useState(() => {
+    try { return localStorage.getItem('notif_budgetAlerts') !== 'false'; } catch { return true; }
+  });
+  const [weeklySummary, setWeeklySummary] = useState(() => {
+    try { return localStorage.getItem('notif_weeklySummary') === 'true'; } catch { return false; }
+  });
   const [defaultCurrency, setDefaultCurrencyState] = useState(getDefaultCurrency());
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -121,14 +126,28 @@ export default function SettingsPage() {
                   <p className="text-sm font-medium text-char dark:text-zinc-200">Budget Alerts</p>
                   <p className="text-xs text-drift dark:text-zinc-500">Get notified when close to budget limit</p>
                 </div>
-                <Toggle checked={notifications} onChange={setNotifications} />
+                <Toggle
+                  checked={notifications}
+                  onChange={(val) => {
+                    setNotifications(val);
+                    localStorage.setItem('notif_budgetAlerts', String(val));
+                    toast(val ? 'Budget alerts enabled' : 'Budget alerts disabled', 'success');
+                  }}
+                />
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-char dark:text-zinc-200">Weekly Summary</p>
                   <p className="text-xs text-drift dark:text-zinc-500">Receive weekly spending report</p>
                 </div>
-                <Toggle checked={false} onChange={() => { }} />
+                <Toggle
+                  checked={weeklySummary}
+                  onChange={(val) => {
+                    setWeeklySummary(val);
+                    localStorage.setItem('notif_weeklySummary', String(val));
+                    toast(val ? 'Weekly summary enabled' : 'Weekly summary disabled', 'success');
+                  }}
+                />
               </div>
             </div>
           </Card>

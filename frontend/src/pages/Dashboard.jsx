@@ -7,8 +7,21 @@ import CategoryBreakdown from '../components/dashboard/CategoryBreakdown';
 import RecentTransactions from '../components/dashboard/RecentTransactions';
 import QuickActionButton from '../components/dashboard/QuickActionButton';
 import { reportApi, transactionApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+
+function getGreeting(name) {
+  const hour = new Date().getHours();
+  let part;
+  if (hour >= 5 && hour < 12) part = 'Good morning';
+  else if (hour >= 12 && hour < 17) part = 'Good afternoon';
+  else if (hour >= 17 && hour < 21) part = 'Good evening';
+  else part = 'Good night';
+  const firstName = name?.split(' ')[0] || 'there';
+  return `${part}, ${firstName} 👋`;
+}
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [dashboard, setDashboard] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -70,7 +83,7 @@ export default function Dashboard() {
   }));
 
   return (
-    <PageWrapper title="Dashboard" subtitle="Your financial overview">
+    <PageWrapper title="Dashboard" subtitle={getGreeting(user?.name)}>
       <BalanceCards
         balance={balance}
         income={income}
@@ -101,9 +114,9 @@ export default function Dashboard() {
       </div>
 
       <RecentTransactions transactions={transactions} />
-      
+
       {/* Quick Action Floating Button */}
-      <QuickActionButton 
+      <QuickActionButton
         onAddTransaction={() => {
           // Trigger global add transaction modal
           window.dispatchEvent(new CustomEvent('openAddTransaction'));

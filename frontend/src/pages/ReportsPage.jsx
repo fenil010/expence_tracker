@@ -38,12 +38,49 @@ const itemAnim = {
 
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [period, setPeriod] = useState('monthly');
   const [chartType, setChartType] = useState('bar'); // 'bar', 'line', 'area'
   const [monthlyData, setMonthlyData] = useState([]);
   const [trendData, setTrendData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
   const currency = getDefaultCurrency();
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      // The CSV endpoint sends plain text/csv — bypass the JSON-only api service
+      const token = localStorage.getItem('authToken');
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+      const url = new URL(`${API_BASE}/reports/export/csv`);
+      url.searchParams.set('period', period);
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Export failed: ${response.statusText}`);
+      }
+
+      const csvContent = await response.text();
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.setAttribute('download', `transactions_${period}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      console.error('Export failed', err);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -114,7 +151,7 @@ export default function ReportsPage() {
             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} />
             <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} tickFormatter={(v) => `${v}`} />
             <Tooltip content={<ChartTooltip />} />
-            <Legend 
+            <Legend
               wrapperStyle={{ paddingTop: '20px' }}
               iconType="circle"
               formatter={(value) => <span className="text-xs text-char dark:text-zinc-300">{value === 'income' ? 'Income' : 'Expenses'}</span>}
@@ -140,7 +177,7 @@ export default function ReportsPage() {
             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} />
             <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} tickFormatter={(v) => `${v}`} />
             <Tooltip content={<ChartTooltip />} />
-            <Legend 
+            <Legend
               wrapperStyle={{ paddingTop: '20px' }}
               iconType="circle"
               formatter={(value) => <span className="text-xs text-char dark:text-zinc-300">{value === 'income' ? 'Income' : 'Expenses'}</span>}
@@ -156,7 +193,7 @@ export default function ReportsPage() {
             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} />
             <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} tickFormatter={(v) => `${v}`} />
             <Tooltip content={<ChartTooltip />} />
-            <Legend 
+            <Legend
               wrapperStyle={{ paddingTop: '20px' }}
               iconType="circle"
               formatter={(value) => <span className="text-xs text-char dark:text-zinc-300">{value === 'income' ? 'Income' : 'Expenses'}</span>}
@@ -182,7 +219,7 @@ export default function ReportsPage() {
               { value: 'yearly', label: 'Yearly' },
             ]}
           />
-          <Button variant="secondary" icon={Download} size="sm">
+          <Button variant="secondary" icon={Download} size="sm" onClick={handleExport} loading={exporting}>
             Export
           </Button>
         </div>
@@ -197,45 +234,42 @@ export default function ReportsPage() {
                 <h3 className="text-base font-semibold text-obsidian dark:text-white mb-1">Income vs Expenses</h3>
                 <p className="text-xs text-drift dark:text-zinc-400">Monthly comparison</p>
               </div>
-              
+
               {/* Chart type switcher */}
               <div className="flex items-center gap-1 bg-sand/50 dark:bg-zinc-800 rounded-lg p-1">
                 <button
                   onClick={() => setChartType('bar')}
-                  className={`p-1.5 rounded transition-colors duration-200 ${
-                    chartType === 'bar' 
-                      ? 'bg-linen dark:bg-zinc-900 text-obsidian dark:text-white' 
-                      : 'text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-300'
-                  }`}
+                  className={`p-1.5 rounded transition-colors duration-200 ${chartType === 'bar'
+                    ? 'bg-linen dark:bg-zinc-900 text-obsidian dark:text-white'
+                    : 'text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-300'
+                    }`}
                   title="Bar Chart"
                 >
                   <BarChart3 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setChartType('line')}
-                  className={`p-1.5 rounded transition-colors duration-200 ${
-                    chartType === 'line' 
-                      ? 'bg-linen dark:bg-zinc-900 text-obsidian dark:text-white' 
-                      : 'text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-300'
-                  }`}
+                  className={`p-1.5 rounded transition-colors duration-200 ${chartType === 'line'
+                    ? 'bg-linen dark:bg-zinc-900 text-obsidian dark:text-white'
+                    : 'text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-300'
+                    }`}
                   title="Line Chart"
                 >
                   <LineChartIcon className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setChartType('area')}
-                  className={`p-1.5 rounded transition-colors duration-200 ${
-                    chartType === 'area' 
-                      ? 'bg-linen dark:bg-zinc-900 text-obsidian dark:text-white' 
-                      : 'text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-300'
-                  }`}
+                  className={`p-1.5 rounded transition-colors duration-200 ${chartType === 'area'
+                    ? 'bg-linen dark:bg-zinc-900 text-obsidian dark:text-white'
+                    : 'text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-300'
+                    }`}
                   title="Area Chart"
                 >
                   <PieChartIcon className="w-4 h-4" />
                 </button>
               </div>
             </div>
-            
+
             <div className="h-72">
               <AnimatePresence mode="wait">
                 <motion.div

@@ -8,6 +8,7 @@ import { TableRowSkeleton } from '../components/ui/Skeleton';
 import { toast } from '../components/ui/Toast';
 import { transactionApi, categoryApi } from '../services/api';
 import AddTransactionModal from '../components/AddTransactionModal';
+import EditTransactionModal from '../components/EditTransactionModal';
 import SwipeableTransactionRow from '../components/SwipeableTransactionRow';
 import { formatCurrency } from '../utils/currencies';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
@@ -18,10 +19,11 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [filters, setFilters] = useState({ type: '', category: '', search: '' });
+  const [filters, setFilters] = useState({ type: '', category: '', search: '', startDate: '', endDate: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [editingTx, setEditingTx] = useState(null);
   const LIMIT = 20;
 
   const fetchTransactions = async (pageNum = 1, append = false) => {
@@ -31,20 +33,22 @@ export default function TransactionsPage() {
       } else {
         setLoading(true);
       }
-      
+
       const params = { sort: '-date', limit: LIMIT, skip: (pageNum - 1) * LIMIT };
       if (filters.type) params.type = filters.type;
       if (filters.category) params.category = filters.category;
-      
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+
       const res = await transactionApi.getAll(params);
       const newTransactions = res.data?.transactions || res.data || [];
-      
+
       if (append) {
         setTransactions(prev => [...prev, ...newTransactions]);
       } else {
         setTransactions(newTransactions);
       }
-      
+
       setHasMore(newTransactions.length === LIMIT);
     } catch (err) {
       console.error(err);
@@ -69,7 +73,7 @@ export default function TransactionsPage() {
     fetchTransactions();
     categoryApi.getAll().then((res) => {
       setCategories(Array.isArray(res.data) ? res.data : []);
-    }).catch(() => {});
+    }).catch(() => { });
 
     // Listen for transaction added events from global modal
     const handleTransactionAdded = () => {
@@ -86,7 +90,7 @@ export default function TransactionsPage() {
       setHasMore(true);
       fetchTransactions(1, false);
     }
-  }, [filters.type, filters.category]);
+  }, [filters.type, filters.category, filters.startDate, filters.endDate]);
 
   const handleDelete = async (id) => {
     try {
@@ -96,6 +100,10 @@ export default function TransactionsPage() {
     } catch {
       toast('Failed to delete', 'error');
     }
+  };
+
+  const handleEdit = (tx) => {
+    setEditingTx(tx);
   };
 
   const filtered = transactions.filter((tx) => {
@@ -169,6 +177,22 @@ export default function TransactionsPage() {
                   ]}
                 />
               </div>
+              <div className="w-40">
+                <Input
+                  label="From"
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => setFilters((p) => ({ ...p, startDate: e.target.value }))}
+                />
+              </div>
+              <div className="w-40">
+                <Input
+                  label="To"
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => setFilters((p) => ({ ...p, endDate: e.target.value }))}
+                />
+              </div>
             </Card>
           </motion.div>
         )}
@@ -201,17 +225,18 @@ export default function TransactionsPage() {
                   tx={tx}
                   index={index}
                   onDelete={handleDelete}
+                  onEdit={handleEdit}
                 />
               ))}
             </AnimatePresence>
-            
+
             {/* Loading more indicator */}
             {loadingMore && (
               <div className="px-6 py-4">
                 <TableRowSkeleton columns={5} />
               </div>
             )}
-            
+
             {/* End of list indicator */}
             {!hasMore && filtered.length > 0 && (
               <div className="px-6 py-4 text-center text-xs text-drift dark:text-zinc-500">
@@ -226,6 +251,13 @@ export default function TransactionsPage() {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onSuccess={fetchTransactions}
+      />
+
+      <EditTransactionModal
+        isOpen={!!editingTx}
+        transaction={editingTx}
+        onClose={() => setEditingTx(null)}
+        onSuccess={() => { fetchTransactions(); setEditingTx(null); }}
       />
     </PageWrapper>
   );

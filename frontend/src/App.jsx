@@ -9,6 +9,7 @@ import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
+import AccountsPage from './pages/AccountsPage';
 import { useAuth } from './context/AuthContext';
 
 function ProtectedRoute({ children }) {
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/accounts" element={<AccountsPage />} />
           </Route>
 
           {/* Catch all - redirect to dashboard */}

@@ -1,14 +1,15 @@
 import { motion, useMotionValue, useTransform } from 'framer-motion';
-import { ArrowUpRight, ArrowDownRight, Trash2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Trash2, Pencil } from 'lucide-react';
 import { Badge } from './ui';
 import { formatCurrency } from '../utils/currencies';
 
 const SWIPE_THRESHOLD = -100;
 
-export default function SwipeableTransactionRow({ 
-  tx, 
-  index, 
-  onDelete 
+export default function SwipeableTransactionRow({
+  tx,
+  index,
+  onDelete,
+  onEdit,
 }) {
   const x = useMotionValue(0);
   const opacity = useTransform(x, [-150, 0], [0.5, 1]);
@@ -30,7 +31,7 @@ export default function SwipeableTransactionRow({
   return (
     <div className="relative overflow-hidden border-b border-stone/10 dark:border-zinc-800/50 last:border-0">
       {/* Delete background */}
-      <motion.div 
+      <motion.div
         className="absolute inset-y-0 right-0 flex items-center justify-end px-6 bg-red-600/80 dark:bg-red-700/80"
         style={{ opacity: deleteOpacity }}
       >
@@ -87,7 +88,15 @@ export default function SwipeableTransactionRow({
         </div>
 
         {/* Actions */}
-        <div className="col-span-1 flex justify-end">
+        <div className="col-span-1 flex justify-end gap-1">
+          {onEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(tx); }}
+              className="p-1.5 rounded-lg text-drift dark:text-zinc-500 hover:text-[var(--color-accent)] hover:bg-sand/40 dark:hover:bg-zinc-800 transition-all duration-300 cursor-pointer"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             onClick={() => onDelete(tx._id || tx.id)}
             className="p-1.5 rounded-lg text-drift dark:text-zinc-500 hover:text-red-700/60 dark:hover:text-red-400 hover:bg-red-50/30 dark:hover:bg-red-950/30 transition-all duration-300 cursor-pointer"

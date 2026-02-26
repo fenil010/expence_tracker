@@ -8,12 +8,14 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  CreditCard,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/transactions', icon: ArrowLeftRight, label: 'Transactions' },
+  { to: '/accounts', icon: CreditCard, label: 'Accounts' },
   { to: '/budgets', icon: Wallet, label: 'Budgets' },
   { to: '/goals', icon: Target, label: 'Goals' },
   { to: '/reports', icon: BarChart3, label: 'Reports' },
