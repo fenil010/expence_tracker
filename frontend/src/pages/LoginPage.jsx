@@ -1,8 +1,28 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+function getPasswordStrength(password) {
+  if (!password) return { score: 0, label: '', color: '' };
+  let score = 0;
+  if (password.length >= 6) score++;
+  if (password.length >= 10) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+
+  const levels = [
+    { score: 0, label: '', color: '' },
+    { score: 1, label: 'Weak', color: 'bg-red-500' },
+    { score: 2, label: 'Fair', color: 'bg-orange-500' },
+    { score: 3, label: 'Good', color: 'bg-yellow-500' },
+    { score: 4, label: 'Strong', color: 'bg-emerald-500' },
+    { score: 5, label: 'Very Strong', color: 'bg-emerald-600' },
+  ];
+  return levels[Math.min(score, 5)];
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -11,6 +31,9 @@ export default function LoginPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const strength = useMemo(() => getPasswordStrength(form.password), [form.password]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,6 +44,11 @@ export default function LoginPage() {
       if (isLogin) {
         await login(form.email, form.password);
       } else {
+        if (form.password.length < 6) {
+          setError('Password must be at least 6 characters');
+          setLoading(false);
+          return;
+        }
         await register({ name: form.name, email: form.email, password: form.password });
       }
       navigate('/');
@@ -123,14 +151,77 @@ export default function LoginPage() {
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-drift dark:text-zinc-500" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={form.password}
                   onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-                  className="w-full pl-10 pr-4 py-3 bg-parchment dark:bg-zinc-950 border border-stone/30 dark:border-zinc-700 rounded-xl text-char dark:text-zinc-100 text-sm placeholder:text-drift/50 dark:placeholder:text-zinc-500 focus:outline-none focus:border-char/60 dark:focus:border-zinc-400 focus:ring-1 focus:ring-char/10 dark:focus:ring-zinc-500/10 transition-all duration-300"
+                  className="w-full pl-10 pr-11 py-3 bg-parchment dark:bg-zinc-950 border border-stone/30 dark:border-zinc-700 rounded-xl text-char dark:text-zinc-100 text-sm placeholder:text-drift/50 dark:placeholder:text-zinc-500 focus:outline-none focus:border-char/60 dark:focus:border-zinc-400 focus:ring-1 focus:ring-char/10 dark:focus:ring-zinc-500/10 transition-all duration-300"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-300 transition-colors cursor-pointer"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
+
+              {/* Password Strength Indicator (register only) */}
+              <AnimatePresence>
+                {!isLogin && form.password.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="mt-3 space-y-2"
+                  >
+                    {/* Strength bar */}
+                    <div className="flex gap-1.5">
+                      {[1, 2, 3, 4, 5].map((level) => (
+                        <motion.div
+                          key={level}
+                          className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${strength.score >= level ? strength.color : 'bg-stone/30 dark:bg-zinc-700'
+                            }`}
+                          initial={{ scaleX: 0 }}
+                          animate={{ scaleX: 1 }}
+                          transition={{ duration: 0.2, delay: level * 0.05 }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-drift dark:text-zinc-500">
+                        {strength.label}
+                      </p>
+                      {/* Password requirement hints */}
+                      <div className="flex items-center gap-2">
+                        {[
+                          { test: form.password.length >= 6, label: '6+' },
+                          { test: /[A-Z]/.test(form.password), label: 'A-Z' },
+                          { test: /[0-9]/.test(form.password), label: '0-9' },
+                        ].map(({ test, label }) => (
+                          <span
+                            key={label}
+                            className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md transition-colors duration-200 ${test
+                                ? 'text-emerald-700/70 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30'
+                                : 'text-drift/60 dark:text-zinc-600 bg-sand/40 dark:bg-zinc-800'
+                              }`}
+                          >
+                            {test && <Check className="w-2.5 h-2.5 inline mr-0.5 -mt-0.5" />}
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Error */}
@@ -179,6 +270,7 @@ export default function LoginPage() {
               onClick={() => {
                 setIsLogin(!isLogin);
                 setError('');
+                setShowPassword(false);
               }}
               className="text-[var(--color-accent)] font-medium hover:underline underline-offset-4 cursor-pointer transition-all duration-200"
             >

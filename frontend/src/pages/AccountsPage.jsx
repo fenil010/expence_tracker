@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, CreditCard, Wallet, Landmark, DollarSign } from 'lucide-react';
-import { PageWrapper, Card, Button, Modal, Input, Select, Badge } from '../components/ui';
+import { Plus, Trash2, CreditCard, Wallet, Landmark, DollarSign, Pencil } from 'lucide-react';
+import { PageWrapper, Card, Button, Modal, Input, Select, Badge, ConfirmDialog } from '../components/ui';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import { toast } from '../components/ui/Toast';
 import { accountApi } from '../services/api';
@@ -33,14 +33,16 @@ export default function AccountsPage() {
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [editingAccount, setEditingAccount] = useState(null);
     const [form, setForm] = useState(defaultForm);
     const [saving, setSaving] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleting, setDeleting] = useState(false);
     const currency = getDefaultCurrency();
 
     const fetchAccounts = async () => {
         try {
             const res = await accountApi.getAll();
-            // GET /api/accounts returns { data: { accounts: [], totalBalance } }
             setAccounts(res.data?.accounts || res.data || []);
         } catch (err) {
             console.error(err);
@@ -59,31 +61,56 @@ export default function AccountsPage() {
         if (!form.name) return;
         setSaving(true);
         try {
-            await accountApi.create({
-                name: form.name,
-                type: form.type,
-                balance: parseFloat(form.balance) || 0,
-                currency: form.currency || currency,
-            });
-            toast('Account created', 'success');
+            if (editingAccount) {
+                await accountApi.update(editingAccount._id || editingAccount.id, {
+                    name: form.name,
+                    type: form.type,
+                    balance: parseFloat(form.balance) || 0,
+                });
+                toast('Account updated', 'success');
+            } else {
+                await accountApi.create({
+                    name: form.name,
+                    type: form.type,
+                    balance: parseFloat(form.balance) || 0,
+                    currency: form.currency || currency,
+                });
+                toast('Account created', 'success');
+            }
             setShowModal(false);
+            setEditingAccount(null);
             setForm(defaultForm);
             fetchAccounts();
         } catch (err) {
-            toast(err.message || 'Failed to create account', 'error');
+            toast(err.message || 'Failed to save account', 'error');
         } finally {
             setSaving(false);
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Delete this account? This cannot be undone.')) return;
+    const handleEdit = (account) => {
+        setEditingAccount(account);
+        setForm({
+            name: account.name || '',
+            type: account.type || 'bank',
+            balance: String(account.balance || ''),
+            currency: account.currency || currency,
+        });
+        setShowModal(true);
+    };
+
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        setDeleting(true);
         try {
-            await accountApi.delete(id);
-            setAccounts((prev) => prev.filter((a) => (a._id || a.id) !== id));
+            await accountApi.delete(deleteTarget);
+            setAccounts((prev) => prev.filter((a) => (a._id || a.id) !== deleteTarget));
             toast('Account deleted', 'success');
         } catch {
             toast('Failed to delete account', 'error');
+        } finally {
+            setDeleting(false);
+            setDeleteTarget(null);
         }
     };
 
@@ -94,7 +121,7 @@ export default function AccountsPage() {
             title="Accounts"
             subtitle="Manage your financial accounts"
             action={
-                <Button icon={Plus} onClick={() => setShowModal(true)}>
+                <Button icon={Plus} onClick={() => { setEditingAccount(null); setForm(defaultForm); setShowModal(true); }}>
                     Add Account
                 </Button>
             }
@@ -109,7 +136,7 @@ export default function AccountsPage() {
                     <Card className="mb-2 flex items-center justify-between bg-gradient-to-r from-sand/40 to-linen dark:from-zinc-800/60 dark:to-zinc-900">
                         <div>
                             <p className="text-xs text-drift dark:text-zinc-400 mb-1">Total Net Worth</p>
-                            <p className="text-2xl font-semibold text-obsidian dark:text-white tabular-nums">
+                            <p className={`text-2xl font-semibold tabular-nums ${totalBalance < 0 ? 'text-red-600/70 dark:text-red-400' : 'text-obsidian dark:text-white'}`}>
                                 {formatCurrency(totalBalance, currency)}
                             </p>
                         </div>
@@ -129,7 +156,8 @@ export default function AccountsPage() {
                     <div className="w-14 h-14 rounded-2xl bg-sand/60 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
                         <CreditCard className="w-6 h-6 text-drift dark:text-zinc-400" />
                     </div>
-                    <p className="text-drift dark:text-zinc-400 text-sm mb-4">No accounts added yet</p>
+                    <p className="text-drift dark:text-zinc-400 text-sm mb-1 font-medium">No accounts added yet</p>
+                    <p className="text-xs text-drift/70 dark:text-zinc-500 mb-4">Add your bank accounts, wallets, and cards to track balances</p>
                     <Button onClick={() => setShowModal(true)} icon={Plus}>Add Account</Button>
                 </Card>
             ) : (
@@ -163,12 +191,20 @@ export default function AccountsPage() {
                                                     </Badge>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => handleDelete(account._id || account.id)}
-                                                className="p-1.5 rounded-lg text-drift dark:text-zinc-500 hover:text-red-700/60 dark:hover:text-red-400 hover:bg-red-50/30 dark:hover:bg-red-950/30 transition-all duration-300 cursor-pointer"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => handleEdit(account)}
+                                                    className="p-1.5 rounded-lg text-drift dark:text-zinc-500 hover:text-[var(--color-accent)] hover:bg-sand/40 dark:hover:bg-zinc-800 transition-all duration-300 cursor-pointer"
+                                                >
+                                                    <Pencil className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => setDeleteTarget(account._id || account.id)}
+                                                    className="p-1.5 rounded-lg text-drift dark:text-zinc-500 hover:text-red-700/60 dark:hover:text-red-400 hover:bg-red-50/30 dark:hover:bg-red-950/30 transition-all duration-300 cursor-pointer"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <div className="mt-auto pt-4 border-t border-stone/15 dark:border-zinc-800">
@@ -188,8 +224,12 @@ export default function AccountsPage() {
                 </div>
             )}
 
-            {/* Create Account Modal */}
-            <Modal isOpen={showModal} onClose={() => { setShowModal(false); setForm(defaultForm); }} title="Add Account">
+            {/* Create/Edit Account Modal */}
+            <Modal
+                isOpen={showModal}
+                onClose={() => { setShowModal(false); setEditingAccount(null); setForm(defaultForm); }}
+                title={editingAccount ? 'Edit Account' : 'Add Account'}
+            >
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <Input
                         label="Account Name"
@@ -205,7 +245,7 @@ export default function AccountsPage() {
                         options={ACCOUNT_TYPES}
                     />
                     <Input
-                        label="Opening Balance"
+                        label={editingAccount ? 'Current Balance' : 'Opening Balance'}
                         type="number"
                         step="0.01"
                         placeholder="0.00"
@@ -213,15 +253,26 @@ export default function AccountsPage() {
                         onChange={(e) => setForm((p) => ({ ...p, balance: e.target.value }))}
                     />
                     <div className="flex justify-end gap-3 pt-2">
-                        <Button variant="ghost" type="button" onClick={() => { setShowModal(false); setForm(defaultForm); }}>
+                        <Button variant="ghost" type="button" onClick={() => { setShowModal(false); setEditingAccount(null); setForm(defaultForm); }}>
                             Cancel
                         </Button>
                         <Button type="submit" loading={saving}>
-                            Create Account
+                            {editingAccount ? 'Save Changes' : 'Create Account'}
                         </Button>
                     </div>
                 </form>
             </Modal>
+
+            {/* Delete Confirmation */}
+            <ConfirmDialog
+                isOpen={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={handleDelete}
+                title="Delete Account?"
+                message="This will permanently remove this account. Transactions linked to this account will not be deleted."
+                confirmText="Delete"
+                loading={deleting}
+            />
         </PageWrapper>
     );
 }

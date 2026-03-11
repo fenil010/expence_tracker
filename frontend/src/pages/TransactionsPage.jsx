@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowUpRight, ArrowDownRight, Trash2, Filter, Search,
+  ArrowUpRight, ArrowDownRight, Trash2, Filter, Search, Plus, X,
 } from 'lucide-react';
-import { PageWrapper, Card, Button, Input, Select, Badge } from '../components/ui';
+import { PageWrapper, Card, Button, Input, Select, Badge, ConfirmDialog } from '../components/ui';
 import { TableRowSkeleton } from '../components/ui/Skeleton';
 import { toast } from '../components/ui/Toast';
 import { transactionApi, categoryApi } from '../services/api';
 import AddTransactionModal from '../components/AddTransactionModal';
 import EditTransactionModal from '../components/EditTransactionModal';
 import SwipeableTransactionRow from '../components/SwipeableTransactionRow';
-import { formatCurrency } from '../utils/currencies';
+import { formatCurrency, getDefaultCurrency } from '../utils/currencies';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 
 export default function TransactionsPage() {
@@ -24,7 +24,10 @@ export default function TransactionsPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [editingTx, setEditingTx] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const LIMIT = 20;
+  const currency = getDefaultCurrency();
 
   const fetchTransactions = async (pageNum = 1, append = false) => {
     try {
@@ -84,21 +87,27 @@ export default function TransactionsPage() {
     return () => window.removeEventListener('transactionAdded', handleTransactionAdded);
   }, []);
 
+  // Reset pagination when filters change
   useEffect(() => {
     if (!loading) {
       setPage(1);
       setHasMore(true);
       fetchTransactions(1, false);
     }
-  }, [filters.type, filters.category, filters.startDate, filters.endDate]);
+  }, [filters.type, filters.category, filters.startDate, filters.endDate, filters.search]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await transactionApi.delete(id);
-      setTransactions((prev) => prev.filter((t) => (t._id || t.id) !== id));
+      await transactionApi.delete(deleteTarget);
+      setTransactions((prev) => prev.filter((t) => (t._id || t.id) !== deleteTarget));
       toast('Transaction deleted', 'success');
     } catch {
       toast('Failed to delete', 'error');
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -116,6 +125,19 @@ export default function TransactionsPage() {
     return true;
   });
 
+  // Summary stats
+  const summary = useMemo(() => {
+    const income = filtered.reduce((sum, tx) => tx.type === 'income' ? sum + (tx.amount || 0) : sum, 0);
+    const expense = filtered.reduce((sum, tx) => tx.type === 'expense' ? sum + (tx.amount || 0) : sum, 0);
+    return { income, expense, net: income - expense };
+  }, [filtered]);
+
+  const hasActiveFilters = filters.type || filters.category || filters.search || filters.startDate || filters.endDate;
+
+  const clearFilters = () => {
+    setFilters({ type: '', category: '', search: '', startDate: '', endDate: '' });
+  };
+
   return (
     <PageWrapper
       title="Transactions"
@@ -127,14 +149,53 @@ export default function TransactionsPage() {
             icon={Filter}
             onClick={() => setShowFilters(!showFilters)}
           >
-            Filter
+            <span className="hidden sm:inline">Filter</span>
+            {hasActiveFilters && (
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] ml-1" />
+            )}
           </Button>
-          <Button icon={() => <span>+</span>} onClick={() => setShowModal(true)}>
-            Add Transaction
+          <Button icon={Plus} onClick={() => setShowModal(true)}>
+            <span className="hidden sm:inline">Add Transaction</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       }
     >
+      {/* Summary Banner */}
+      {!loading && filtered.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-sand/30 to-linen dark:from-zinc-800/40 dark:to-zinc-900" padding="p-4 px-6">
+            <div className="flex items-center gap-6 text-sm">
+              <div>
+                <span className="text-drift dark:text-zinc-500 text-xs">Income</span>
+                <p className="font-semibold text-emerald-700/70 dark:text-emerald-400 tabular-nums">
+                  +{formatCurrency(summary.income, currency)}
+                </p>
+              </div>
+              <div>
+                <span className="text-drift dark:text-zinc-500 text-xs">Expenses</span>
+                <p className="font-semibold text-obsidian dark:text-zinc-200 tabular-nums">
+                  -{formatCurrency(summary.expense, currency)}
+                </p>
+              </div>
+              <div>
+                <span className="text-drift dark:text-zinc-500 text-xs">Net</span>
+                <p className={`font-semibold tabular-nums ${summary.net >= 0 ? 'text-emerald-700/70 dark:text-emerald-400' : 'text-red-600/70 dark:text-red-400'}`}>
+                  {formatCurrency(summary.net, currency)}
+                </p>
+              </div>
+            </div>
+            <span className="text-xs text-drift dark:text-zinc-500">
+              {filtered.length} transaction{filtered.length !== 1 ? 's' : ''}
+            </span>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Filters */}
       <AnimatePresence>
         {showFilters && (
@@ -193,6 +254,15 @@ export default function TransactionsPage() {
                   onChange={(e) => setFilters((p) => ({ ...p, endDate: e.target.value }))}
                 />
               </div>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="flex items-center gap-1 text-xs text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-300 transition-colors cursor-pointer pb-2"
+                >
+                  <X className="w-3 h-3" />
+                  Clear
+                </button>
+              )}
             </Card>
           </motion.div>
         )}
@@ -200,8 +270,8 @@ export default function TransactionsPage() {
 
       {/* Table */}
       <Card padding="p-0">
-        {/* Header */}
-        <div className="grid grid-cols-12 gap-4 px-6 py-3.5 border-b border-stone/20 dark:border-zinc-800 bg-sand/20 dark:bg-zinc-800/30">
+        {/* Header — hidden on mobile */}
+        <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3.5 border-b border-stone/20 dark:border-zinc-800 bg-sand/20 dark:bg-zinc-800/30">
           <span className="col-span-5 text-xs font-medium text-drift dark:text-zinc-500 uppercase tracking-wider">Description</span>
           <span className="col-span-2 text-xs font-medium text-drift dark:text-zinc-500 uppercase tracking-wider">Category</span>
           <span className="col-span-2 text-xs font-medium text-drift dark:text-zinc-500 uppercase tracking-wider">Date</span>
@@ -213,8 +283,20 @@ export default function TransactionsPage() {
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} columns={5} />)
         ) : filtered.length === 0 ? (
-          <div className="px-6 py-16 text-center text-sm text-drift dark:text-zinc-500">
-            No transactions found
+          <div className="px-6 py-16 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-sand/60 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+              <ArrowDownRight className="w-6 h-6 text-drift dark:text-zinc-400" />
+            </div>
+            <p className="text-drift dark:text-zinc-400 text-sm mb-1 font-medium">No transactions found</p>
+            <p className="text-xs text-drift/70 dark:text-zinc-500 mb-4">
+              {hasActiveFilters ? 'Try adjusting your filters' : 'Start by adding your first transaction'}
+            </p>
+            {!hasActiveFilters && (
+              <Button size="sm" onClick={() => setShowModal(true)} icon={Plus}>Add Transaction</Button>
+            )}
+            {hasActiveFilters && (
+              <Button size="sm" variant="ghost" onClick={clearFilters}>Clear Filters</Button>
+            )}
           </div>
         ) : (
           <>
@@ -224,7 +306,7 @@ export default function TransactionsPage() {
                   key={tx._id || tx.id}
                   tx={tx}
                   index={index}
-                  onDelete={handleDelete}
+                  onDelete={(id) => setDeleteTarget(id)}
                   onEdit={handleEdit}
                 />
               ))}
@@ -240,7 +322,7 @@ export default function TransactionsPage() {
             {/* End of list indicator */}
             {!hasMore && filtered.length > 0 && (
               <div className="px-6 py-4 text-center text-xs text-drift dark:text-zinc-500">
-                No more transactions
+                All transactions loaded
               </div>
             )}
           </>
@@ -258,6 +340,17 @@ export default function TransactionsPage() {
         transaction={editingTx}
         onClose={() => setEditingTx(null)}
         onSuccess={() => { fetchTransactions(); setEditingTx(null); }}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete Transaction?"
+        message="This will permanently remove this transaction from your records."
+        confirmText="Delete"
+        loading={deleting}
       />
     </PageWrapper>
   );

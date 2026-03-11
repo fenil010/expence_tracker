@@ -11,7 +11,7 @@ const defaultForm = {
   category: '',
   date: new Date().toISOString().split('T')[0],
   account: '',
-  currency: getDefaultCurrency(),
+  currency: '',
 };
 
 export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
@@ -22,15 +22,15 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
 
   useEffect(() => {
     if (isOpen) {
-      setForm(defaultForm);
+      setForm({ ...defaultForm, currency: getDefaultCurrency(), date: new Date().toISOString().split('T')[0] });
       categoryApi.getAll().then((res) => {
         const cats = res.data || res || [];
         setCategories(Array.isArray(cats) ? cats : []);
-      }).catch(() => {});
+      }).catch(() => { });
       accountApi.getAll().then((res) => {
         const accts = res.data?.accounts || res.data || [];
         setAccounts(Array.isArray(accts) ? accts : []);
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, [isOpen]);
 
@@ -57,18 +57,18 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
         date: form.date,
         currency: form.currency,
       };
-      
+
       // Only include account if it's not empty
       if (form.account) {
         payload.account = form.account;
       }
-      
+
       await transactionApi.create(payload);
       toast('Transaction added successfully', 'success');
-      
+
       // Dispatch custom event to notify other components
       window.dispatchEvent(new CustomEvent('transactionAdded'));
-      
+
       onSuccess?.();
       onClose();
     } catch (err) {

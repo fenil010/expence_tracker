@@ -45,6 +45,7 @@ export default function ProfilePage() {
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
+                onClick={() => toast('Avatar upload coming soon', 'info')}
                 className="absolute -bottom-1 -right-1 w-8 h-8 bg-[var(--color-accent)] rounded-lg flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity shadow-card">
                 <Camera className="w-3.5 h-3.5 text-white" />
               </motion.button>

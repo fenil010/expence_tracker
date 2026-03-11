@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
@@ -28,6 +28,16 @@ const ChartTooltip = ({ active, payload, label }) => {
   );
 };
 
+const EmptyChartState = ({ title }) => (
+  <div className="flex flex-col items-center justify-center h-full min-h-[200px]">
+    <div className="w-12 h-12 rounded-2xl bg-sand/40 dark:bg-zinc-800 flex items-center justify-center mb-3">
+      <BarChart3 className="w-5 h-5 text-drift dark:text-zinc-500" />
+    </div>
+    <p className="text-sm text-drift dark:text-zinc-500 font-medium">No data available</p>
+    <p className="text-xs text-drift/60 dark:text-zinc-600 mt-1">Add transactions to see {title.toLowerCase()}</p>
+  </div>
+);
+
 const itemAnim = {
   hidden: { opacity: 0, y: 12 },
   show: (i) => ({
@@ -40,7 +50,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [period, setPeriod] = useState('monthly');
-  const [chartType, setChartType] = useState('bar'); // 'bar', 'line', 'area'
+  const [chartType, setChartType] = useState('bar');
   const [monthlyData, setMonthlyData] = useState([]);
   const [trendData, setTrendData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
@@ -49,7 +59,6 @@ export default function ReportsPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      // The CSV endpoint sends plain text/csv — bypass the JSON-only api service
       const token = localStorage.getItem('authToken');
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
       const url = new URL(`${API_BASE}/reports/export/csv`);
@@ -84,10 +93,12 @@ export default function ReportsPage() {
 
   useEffect(() => {
     const fetchReports = async () => {
+      setLoading(true);
       try {
+        // Pass period to both API calls
         const [monthly, trends] = await Promise.all([
-          reportApi.getMonthly(),
-          reportApi.getTrends(),
+          reportApi.getMonthly({ period }),
+          reportApi.getTrends({ period }),
         ]);
 
         const mData = monthly.data || {};
@@ -123,6 +134,14 @@ export default function ReportsPage() {
     };
     fetchReports();
   }, [period]);
+
+  // Summary stats computed from trend data
+  const summaryStats = useMemo(() => [
+    { label: 'Total Income', value: trendData.reduce?.((s, d) => s + (d.income || 0), 0) || 0 },
+    { label: 'Total Expenses', value: trendData.reduce?.((s, d) => s + (d.expenses || 0), 0) || 0 },
+    { label: 'Net Savings', value: trendData.reduce?.((s, d) => s + (d.income || 0) - (d.expenses || 0), 0) || 0 },
+    { label: 'Avg Monthly Spend', value: trendData.length > 0 ? trendData.reduce((s, d) => s + (d.expenses || 0), 0) / trendData.length : 0 },
+  ], [trendData]);
 
   if (loading) {
     return (
@@ -232,14 +251,16 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-base font-semibold text-obsidian dark:text-white mb-1">Income vs Expenses</h3>
-                <p className="text-xs text-drift dark:text-zinc-400">Monthly comparison</p>
+                <p className="text-xs text-drift dark:text-zinc-400">
+                  {period === 'yearly' ? 'Yearly' : 'Monthly'} comparison
+                </p>
               </div>
 
               {/* Chart type switcher */}
               <div className="flex items-center gap-1 bg-sand/50 dark:bg-zinc-800 rounded-lg p-1">
                 <button
                   onClick={() => setChartType('bar')}
-                  className={`p-1.5 rounded transition-colors duration-200 ${chartType === 'bar'
+                  className={`p-1.5 rounded transition-colors duration-200 cursor-pointer ${chartType === 'bar'
                     ? 'bg-linen dark:bg-zinc-900 text-obsidian dark:text-white'
                     : 'text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-300'
                     }`}
@@ -249,7 +270,7 @@ export default function ReportsPage() {
                 </button>
                 <button
                   onClick={() => setChartType('line')}
-                  className={`p-1.5 rounded transition-colors duration-200 ${chartType === 'line'
+                  className={`p-1.5 rounded transition-colors duration-200 cursor-pointer ${chartType === 'line'
                     ? 'bg-linen dark:bg-zinc-900 text-obsidian dark:text-white'
                     : 'text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-300'
                     }`}
@@ -259,7 +280,7 @@ export default function ReportsPage() {
                 </button>
                 <button
                   onClick={() => setChartType('area')}
-                  className={`p-1.5 rounded transition-colors duration-200 ${chartType === 'area'
+                  className={`p-1.5 rounded transition-colors duration-200 cursor-pointer ${chartType === 'area'
                     ? 'bg-linen dark:bg-zinc-900 text-obsidian dark:text-white'
                     : 'text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-300'
                     }`}
@@ -271,9 +292,13 @@ export default function ReportsPage() {
             </div>
 
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                {renderChart()}
-              </ResponsiveContainer>
+              {trendData.length === 0 ? (
+                <EmptyChartState title="trends" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  {renderChart()}
+                </ResponsiveContainer>
+              )}
             </div>
           </Card>
         </motion.div>
@@ -284,21 +309,25 @@ export default function ReportsPage() {
             <h3 className="text-base font-semibold text-obsidian dark:text-white mb-1">Spending Trend</h3>
             <p className="text-xs text-drift dark:text-zinc-400 mb-5">Over time</p>
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="reportGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3D3830" stopOpacity={0.15} />
-                      <stop offset="100%" stopColor="#3D3830" stopOpacity={0.01} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#C4BDB0" strokeOpacity={0.3} vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} tickFormatter={(v) => `${v}`} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Area type="monotone" dataKey="amount" stroke="#3D3830" strokeWidth={2} fill="url(#reportGradient)" animationDuration={800} />
-                </AreaChart>
-              </ResponsiveContainer>
+              {monthlyData.length === 0 ? (
+                <EmptyChartState title="spending data" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={monthlyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="reportGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3D3830" stopOpacity={0.15} />
+                        <stop offset="100%" stopColor="#3D3830" stopOpacity={0.01} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#C4BDB0" strokeOpacity={0.3} vertical={false} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} tickFormatter={(v) => `${v}`} />
+                    <Tooltip content={<ChartTooltip />} />
+                    <Area type="monotone" dataKey="amount" stroke="#3D3830" strokeWidth={2} fill="url(#reportGradient)" animationDuration={800} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </Card>
         </motion.div>
@@ -309,37 +338,43 @@ export default function ReportsPage() {
             <h3 className="text-base font-semibold text-obsidian dark:text-white mb-1">Category Distribution</h3>
             <p className="text-xs text-drift dark:text-zinc-400 mb-5">Where your money goes</p>
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryData.length > 0 ? categoryData : [{ name: 'No data', value: 1 }]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    dataKey="value"
-                    animationDuration={600}
-                  >
-                    {(categoryData.length > 0 ? categoryData : [{ name: 'No data', value: 1 }]).map((_, index) => (
-                      <Cell key={index} fill={MONO_COLORS[index % MONO_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
+              {categoryData.length === 0 ? (
+                <EmptyChartState title="categories" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      dataKey="value"
+                      animationDuration={600}
+                    >
+                      {categoryData.map((_, index) => (
+                        <Cell key={index} fill={MONO_COLORS[index % MONO_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<ChartTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
-            <div className="mt-2 space-y-1.5">
-              {categoryData.slice(0, 5).map((item, i) => (
-                <div key={item.name} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: MONO_COLORS[i] }} />
-                    <span className="text-char dark:text-zinc-300">{item.name}</span>
+            {categoryData.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                {categoryData.slice(0, 5).map((item, i) => (
+                  <div key={item.name} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: MONO_COLORS[i] }} />
+                      <span className="text-char dark:text-zinc-300">{item.name}</span>
+                    </div>
+                    <span className="font-medium text-obsidian dark:text-white">{formatCurrency(Number(item.value), currency)}</span>
                   </div>
-                  <span className="font-medium text-obsidian dark:text-white">{formatCurrency(Number(item.value), currency)}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Card>
         </motion.div>
 
@@ -351,15 +386,13 @@ export default function ReportsPage() {
               <p className="text-xs text-drift dark:text-zinc-400 mb-8">Key financial metrics</p>
             </div>
             <div className="space-y-3">
-              {[
-                { label: 'Total Income', value: trendData.reduce?.((s, d) => s + (d.income || 0), 0) || 0 },
-                { label: 'Total Expenses', value: trendData.reduce?.((s, d) => s + (d.expenses || 0), 0) || 0 },
-                { label: 'Net Savings', value: trendData.reduce?.((s, d) => s + (d.income || 0) - (d.expenses || 0), 0) || 0 },
-                { label: 'Avg Monthly Spend', value: trendData.length > 0 ? trendData.reduce((s, d) => s + (d.expenses || 0), 0) / trendData.length : 0 },
-              ].map((stat) => (
+              {summaryStats.map((stat) => (
                 <div key={stat.label} className="flex items-center justify-between py-3.5 border-b border-stone/15 dark:border-zinc-800 last:border-0">
                   <span className="text-sm text-drift dark:text-zinc-400">{stat.label}</span>
-                  <span className="text-sm font-semibold text-obsidian dark:text-white tabular-nums">
+                  <span className={`text-sm font-semibold tabular-nums ${stat.label === 'Net Savings' && stat.value < 0
+                      ? 'text-red-600/70 dark:text-red-400'
+                      : 'text-obsidian dark:text-white'
+                    }`}>
                     {formatCurrency(Number(stat.value), currency)}
                   </span>
                 </div>
