@@ -37,6 +37,7 @@ export default function Card({
       variants={cardVariants}
       onClick={onClick}
       className={`
+        relative
         ${variants[variant]}
         rounded-2xl
         ${padding}

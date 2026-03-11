@@ -56,12 +56,12 @@ router.post('/register', [
     }], opts);
     const user = users[0];
 
-    // Create all defaults
+    // Create all defaults (pass session for atomicity)
     await Promise.all([
-      Category.createDefaultsForUser(user._id),
-      Budget.createDefaultMonthlyBudget(user._id),
-      Goal.createEmergencyFundGoal(user._id),
-      Account.createDefaultsForUser(user._id)
+      Category.createDefaultsForUser(user._id, session),
+      Budget.createDefaultMonthlyBudget(user._id, undefined, session),
+      Goal.createEmergencyFundGoal(user._id, session),
+      Account.createDefaultsForUser(user._id, session)
     ]);
 
     // Generate tokens

@@ -141,9 +141,9 @@ export default function GoalsPage() {
                         </div>
                         <div>
                           <h3 className="font-semibold text-obsidian dark:text-white text-sm">{goal.name}</h3>
-                          {goal.deadline && (
+                          {goal.targetDate && (
                             <p className="text-xs text-drift dark:text-zinc-500">
-                              Due {new Date(goal.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              Due {new Date(goal.targetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </p>
                           )}
                         </div>

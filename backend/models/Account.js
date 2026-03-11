@@ -139,7 +139,7 @@ accountSchema.statics.getTotalBalance = async function (userId) {
 /**
  * Create default accounts for a new user
  */
-accountSchema.statics.createDefaultsForUser = async function (userId) {
+accountSchema.statics.createDefaultsForUser = async function (userId, session) {
     return this.insertMany([
         {
             user: userId,
@@ -159,7 +159,7 @@ accountSchema.statics.createDefaultsForUser = async function (userId) {
             color: '#007AFF',
             isDefault: false
         }
-    ]);
+    ], session ? { session } : {});
 };
 
 // ========================================================================

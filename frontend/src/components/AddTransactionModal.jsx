@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Select, Button, Toggle } from './ui';
 import { toast } from './ui/Toast';
-import { transactionApi, categoryApi } from '../services/api';
+import { transactionApi, categoryApi, accountApi } from '../services/api';
 import { CURRENCIES, getDefaultCurrency } from '../utils/currencies';
 
 const defaultForm = {
@@ -17,6 +17,7 @@ const defaultForm = {
 export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
   const [form, setForm] = useState(defaultForm);
   const [categories, setCategories] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -25,6 +26,10 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
       categoryApi.getAll().then((res) => {
         const cats = res.data || res || [];
         setCategories(Array.isArray(cats) ? cats : []);
+      }).catch(() => {});
+      accountApi.getAll().then((res) => {
+        const accts = res.data?.accounts || res.data || [];
+        setAccounts(Array.isArray(accts) ? accts : []);
       }).catch(() => {});
     }
   }, [isOpen]);
@@ -76,6 +81,11 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
   const categoryOptions = categories
     .filter((c) => !c.type || c.type === form.type)
     .map((c) => ({ value: c._id || c.name, label: c.name }));
+
+  const accountOptions = accounts.map((a) => ({
+    value: a._id || a.id,
+    label: `${a.name} (${a.type})`,
+  }));
 
   const currencyOptions = CURRENCIES.map((c) => ({
     value: c.code,
@@ -143,6 +153,17 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
           value={form.date}
           onChange={(e) => handleChange('date', e.target.value)}
         />
+
+        {/* Account */}
+        {accountOptions.length > 0 && (
+          <Select
+            label="Account (optional)"
+            placeholder="Select account"
+            value={form.account}
+            onChange={(e) => handleChange('account', e.target.value)}
+            options={[{ value: '', label: 'No account' }, ...accountOptions]}
+          />
+        )}
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3 pt-2">

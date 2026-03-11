@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Select, Button, Toggle } from './ui';
 import { toast } from './ui/Toast';
-import { transactionApi, categoryApi } from '../services/api';
+import { transactionApi, categoryApi, accountApi } from '../services/api';
 import { CURRENCIES } from '../utils/currencies';
 
 export default function EditTransactionModal({ isOpen, onClose, transaction, onSuccess }) {
     const [form, setForm] = useState(null);
     const [categories, setCategories] = useState([]);
+    const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -16,6 +17,7 @@ export default function EditTransactionModal({ isOpen, onClose, transaction, onS
                 amount: String(transaction.amount || ''),
                 description: transaction.description || '',
                 category: transaction.category?._id || transaction.category || '',
+                account: transaction.account?._id || transaction.account || '',
                 date: transaction.date
                     ? new Date(transaction.date).toISOString().split('T')[0]
                     : new Date().toISOString().split('T')[0],
@@ -25,6 +27,10 @@ export default function EditTransactionModal({ isOpen, onClose, transaction, onS
             categoryApi.getAll().then((res) => {
                 const cats = res.data || res || [];
                 setCategories(Array.isArray(cats) ? cats : []);
+            }).catch(() => { });
+            accountApi.getAll().then((res) => {
+                const accts = res.data?.accounts || res.data || [];
+                setAccounts(Array.isArray(accts) ? accts : []);
             }).catch(() => { });
         }
     }, [isOpen, transaction]);
@@ -52,6 +58,7 @@ export default function EditTransactionModal({ isOpen, onClose, transaction, onS
                 amount: parseFloat(form.amount),
                 description: form.description,
                 category: form.category,
+                account: form.account || undefined,
                 date: form.date,
                 currency: form.currency,
             });
@@ -69,6 +76,11 @@ export default function EditTransactionModal({ isOpen, onClose, transaction, onS
     const categoryOptions = (categories || [])
         .filter((c) => !c.type || c.type === form?.type)
         .map((c) => ({ value: c._id || c.name, label: c.name }));
+
+    const accountOptions = (accounts || []).map((a) => ({
+        value: a._id || a.id,
+        label: `${a.name} (${a.type})`,
+    }));
 
     const currencyOptions = CURRENCIES.map((c) => ({
         value: c.code,
@@ -137,6 +149,17 @@ export default function EditTransactionModal({ isOpen, onClose, transaction, onS
                         value={form.date}
                         onChange={(e) => handleChange('date', e.target.value)}
                     />
+
+                    {/* Account */}
+                    {accountOptions.length > 0 && (
+                        <Select
+                            label="Account (optional)"
+                            placeholder="Select account"
+                            value={form.account}
+                            onChange={(e) => handleChange('account', e.target.value)}
+                            options={[{ value: '', label: 'No account' }, ...accountOptions]}
+                        />
+                    )}
 
                     {/* Actions */}
                     <div className="flex items-center justify-end gap-3 pt-2">

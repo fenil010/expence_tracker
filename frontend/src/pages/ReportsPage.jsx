@@ -271,19 +271,9 @@ export default function ReportsPage() {
             </div>
 
             <div className="h-72">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={chartType}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    {renderChart()}
-                  </ResponsiveContainer>
-                </motion.div>
-              </AnimatePresence>
+              <ResponsiveContainer width="100%" height="100%">
+                {renderChart()}
+              </ResponsiveContainer>
             </div>
           </Card>
         </motion.div>

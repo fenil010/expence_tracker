@@ -366,8 +366,9 @@ goalSchema.statics.getTotalSavings = async function (userId) {
   return result[0]?.total || 0;
 };
 
-goalSchema.statics.createEmergencyFundGoal = async function (userId, targetAmount = 10000) {
-  return this.create({
+goalSchema.statics.createEmergencyFundGoal = async function (userId, session, targetAmount = 10000) {
+  const opts = session ? { session } : {};
+  const [goal] = await this.create([{
     user: userId,
     name: 'Emergency Fund',
     description: '3-6 months of living expenses',
@@ -377,7 +378,8 @@ goalSchema.statics.createEmergencyFundGoal = async function (userId, targetAmoun
     color: '#FF3B30',
     icon: '🚨',
     targetDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-  });
+  }], opts);
+  return goal;
 };
 
 const Goal = mongoose.model('Goal', goalSchema);

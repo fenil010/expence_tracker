@@ -72,14 +72,19 @@ export default function Dashboard() {
   const balance = dashboard?.totalBalance || 0;
   const income = dashboard?.currentMonth?.income || 0;
   const expenses = dashboard?.currentMonth?.expenses || 0;
-  const monthlyBudget = dashboard?.monthlyBudget || income; // Use income as default budget if not set
-  const monthlyData = dashboard?.recentTransactions?.map(tx => ({
+  const budgetData = dashboard?.budget;
+  const monthlyBudget = budgetData?.amount || income; // Use income as default budget if not set
+  
+  // Use recent transactions for the chart — map to daily data
+  const monthlyData = (dashboard?.recentTransactions || []).map(tx => ({
     name: new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     amount: tx.amount || 0,
-  })) || [];
+  })).reverse(); // Chronological order
+  
   const categoryData = (dashboard?.categoryBreakdown || []).map(c => ({
     name: c.categoryName || c.name || 'Other',
     value: c.total || c.value || 0,
+    id: c._id || null,
   }));
 
   return (

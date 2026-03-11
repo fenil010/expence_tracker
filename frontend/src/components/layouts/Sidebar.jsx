@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   CreditCard,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -36,19 +37,26 @@ const navItemVariants = {
   show: { x: 0, opacity: 1, transition: { duration: 0.35 } },
 };
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen = false, onClose }) {
   const { logout, user } = useAuth();
   const { pathname } = useLocation();
 
-  return (
+  const handleNavClick = () => {
+    // Close sidebar on mobile when navigating
+    if (window.innerWidth < 1024 && onClose) {
+      onClose();
+    }
+  };
+
+  const sidebarContent = (
     <motion.aside
       initial="hidden"
       animate="show"
       variants={sidebarVariants}
       className="fixed left-0 top-0 bottom-0 w-64 bg-linen dark:bg-zinc-900 border-r border-stone/20 dark:border-zinc-800 flex flex-col z-40 transition-colors duration-300"
     >
-      {/* Logo */}
-      <div className="px-6 py-7">
+      {/* Logo + mobile close */}
+      <div className="px-6 py-7 flex items-center justify-between">
         <motion.h1
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -57,6 +65,12 @@ export default function Sidebar() {
         >
           Ledger<span className="text-drift dark:text-zinc-500">.</span>
         </motion.h1>
+        <button
+          onClick={onClose}
+          className="lg:hidden p-1.5 rounded-lg text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand/50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Navigation */}
@@ -69,6 +83,7 @@ export default function Sidebar() {
                 to={to}
                 end={to === '/'}
                 className="relative block"
+                onClick={handleNavClick}
               >
                 <motion.div
                   whileHover={{ x: 4 }}
@@ -138,5 +153,41 @@ export default function Sidebar() {
         </motion.button>
       </motion.div>
     </motion.aside>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar - always visible */}
+      <div className="hidden lg:block">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile sidebar - shown via overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+              onClick={onClose}
+            />
+            {/* Sidebar */}
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="fixed inset-y-0 left-0 z-40 lg:hidden"
+            >
+              {sidebarContent}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

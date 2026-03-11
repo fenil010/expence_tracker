@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Bell, ChevronDown, Command, Sun, Moon, Monitor } from 'lucide-react';
+import { Plus, Search, Bell, ChevronDown, Command, Sun, Moon, Monitor, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -17,7 +17,7 @@ const pageTitles = {
 
 const themeIcons = { light: Sun, dark: Moon, system: Monitor };
 
-export default function TopNavbar({ onAddTransaction }) {
+export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const { mode, toggleTheme } = useTheme();
@@ -45,17 +45,28 @@ export default function TopNavbar({ onAddTransaction }) {
     <header className="sticky top-0 z-30 bg-parchment/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-stone/15 dark:border-zinc-800 transition-colors duration-300">
       <div className="flex items-center justify-between h-14 px-6 lg:px-10">
         {/* Breadcrumb-style page indicator */}
-        <motion.div
-          key={title}
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="flex items-center gap-2 text-sm"
-        >
+        <div className="flex items-center gap-3">
+          {/* Mobile menu button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onMenuToggle}
+            className="lg:hidden p-2 rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand/50 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer"
+          >
+            <Menu className="w-5 h-5" strokeWidth={1.8} />
+          </motion.button>
+          <motion.div
+            key={title}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="flex items-center gap-2 text-sm"
+          >
           <span className="text-drift dark:text-zinc-500">Ledger</span>
           <span className="text-stone dark:text-zinc-700">/</span>
           <span className="font-medium text-char dark:text-zinc-200">{title}</span>
         </motion.div>
+        </div>
 
         {/* Right side */}
         <div className="flex items-center gap-2">

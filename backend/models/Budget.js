@@ -250,12 +250,13 @@ budgetSchema.statics.getCurrentMonthlyBudget = async function (userId) {
 /**
  * Create default monthly budget
  */
-budgetSchema.statics.createDefaultMonthlyBudget = async function (userId, amount = 5000) {
+budgetSchema.statics.createDefaultMonthlyBudget = async function (userId, amount = 5000, session) {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-  return this.create({
+  const opts = session ? { session } : {};
+  const [budget] = await this.create([{
     user: userId,
     name: 'Monthly Budget',
     type: 'monthly',
@@ -265,7 +266,8 @@ budgetSchema.statics.createDefaultMonthlyBudget = async function (userId, amount
     alertThreshold: 80,
     alertEnabled: true,
     color: '#5c7cfa'
-  });
+  }], opts);
+  return budget;
 };
 
 /**

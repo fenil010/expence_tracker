@@ -26,7 +26,7 @@ router.use(protect);
  * @access  Private
  */
 router.get('/dashboard', asyncHandler(async (req, res) => {
-  const userId = req.user._id;
+  const userId = new mongoose.Types.ObjectId(req.user._id);
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
@@ -184,7 +184,7 @@ router.get('/monthly', [
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59);
 
-  const userId = req.user._id;
+  const userId = new mongoose.Types.ObjectId(req.user._id);
 
   // Use $facet to run parallel aggregations in one pipeline
   const [report] = await Transaction.aggregate([
@@ -301,7 +301,7 @@ router.get('/yearly', [
   const startDate = new Date(year, 0, 1);
   const endDate = new Date(year, 11, 31, 23, 59, 59);
 
-  const userId = req.user._id;
+  const userId = new mongoose.Types.ObjectId(req.user._id);
 
   const [report] = await Transaction.aggregate([
     {
@@ -395,7 +395,7 @@ router.get('/trends', [
   validate
 ], asyncHandler(async (req, res) => {
   const months = parseInt(req.query.months) || 6;
-  const userId = req.user._id;
+  const userId = new mongoose.Types.ObjectId(req.user._id);
 
   const trend = await Transaction.getMonthlyTrend(userId, months);
 

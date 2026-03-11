@@ -137,7 +137,7 @@ categorySchema.statics.getDefaultCategories = function () {
 /**
  * Create default categories for a new user
  */
-categorySchema.statics.createDefaultsForUser = async function (userId) {
+categorySchema.statics.createDefaultsForUser = async function (userId, session) {
   const defaults = this.getDefaultCategories();
   const categories = [];
 
@@ -148,7 +148,7 @@ categorySchema.statics.createDefaultsForUser = async function (userId) {
     categories.push({ user: userId, ...cat, type: 'expense' });
   }
 
-  return this.insertMany(categories);
+  return this.insertMany(categories, session ? { session } : {});
 };
 
 /**

@@ -31,7 +31,7 @@ router.get('/', [
   queryValidator('type').optional().isIn(['income', 'expense', 'transfer']),
   queryValidator('startDate').optional().isISO8601(),
   queryValidator('endDate').optional().isISO8601(),
-  queryValidator('category').optional().isMongoId(),
+  queryValidator('category').optional().isString(),
   queryValidator('account').optional().isMongoId(),
   queryValidator('sortBy').optional().isIn(['date', 'amount', 'createdAt']),
   queryValidator('sortOrder').optional().isIn(['asc', 'desc']),
@@ -58,7 +58,31 @@ router.get('/', [
   const filter = { user: req.user._id, isTemplate: { $ne: true } };
 
   if (type) filter.type = type;
-  if (category) filter.category = new mongoose.Types.ObjectId(category);
+  if (category) {
+    // Support both ObjectId and category name
+    if (mongoose.Types.ObjectId.isValid(category)) {
+      filter.category = new mongoose.Types.ObjectId(category);
+    } else {
+      // Look up category by name
+      const categoryDoc = await Category.findOne({
+        user: req.user._id,
+        name: new RegExp(`^${category}$`, 'i'),
+        isActive: true
+      });
+      if (categoryDoc) {
+        filter.category = categoryDoc._id;
+      } else {
+        // No matching category, return empty results
+        return res.json({
+          success: true,
+          data: {
+            transactions: [],
+            pagination: { page: 1, limit: parseInt(limit), total: 0, pages: 0 }
+          }
+        });
+      }
+    }
+  }
   if (account) filter.account = new mongoose.Types.ObjectId(account);
   if (status) filter.status = status;
   if (startDate || endDate) {
@@ -471,8 +495,31 @@ router.delete('/:id', [
 }));
 
 /**
+ * @route   POST /api/transactions/bulk-delete
+ * @desc    Delete multiple transactions (POST for reliable body support)
+ * @access  Private
+ */
+router.post('/bulk-delete', [
+  body('ids').isArray({ min: 1 }).withMessage('IDs array is required'),
+  body('ids.*').isMongoId().withMessage('Each ID must be valid'),
+  validate
+], asyncHandler(async (req, res) => {
+  const { ids } = req.body;
+
+  const result = await Transaction.deleteMany({
+    _id: { $in: ids },
+    user: req.user._id
+  });
+
+  res.json({
+    success: true,
+    message: `${result.deletedCount} transactions deleted`
+  });
+}));
+
+/**
  * @route   DELETE /api/transactions
- * @desc    Delete multiple transactions
+ * @desc    Delete multiple transactions (legacy - kept for backward compat)
  * @access  Private
  */
 router.delete('/', [

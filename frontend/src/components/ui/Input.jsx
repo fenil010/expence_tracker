@@ -50,26 +50,35 @@ const Input = forwardRef(({
 
   return (
     <div className="space-y-1.5">
+      {/* Static label (non-floating) */}
+      {label && !floatingLabel && (
+        <label
+          className={`
+            block text-sm font-medium mb-1.5
+            ${error ? 'text-red-600/70 dark:text-red-400' : 'text-char dark:text-zinc-200'}
+            ${isFocused && !error ? 'text-[var(--color-accent)]' : ''}
+          `}
+        >
+          {label}
+        </label>
+      )}
       <div className="relative">
-        {/* Floating or static label */}
-        {label && (
+        {/* Floating label */}
+        {label && floatingLabel && (
           <motion.label
             className={`
               absolute left-3 pointer-events-none
               text-sm font-medium transition-all duration-300
-              ${floatingLabel
-                ? isFloating
-                  ? '-top-2.5 text-xs bg-parchment dark:bg-zinc-950 px-1 text-char dark:text-zinc-200'
-                  : 'top-1/2 -translate-y-1/2 text-drift dark:text-zinc-500'
-                : 'block mb-1.5 text-char dark:text-zinc-200'
+              ${isFloating
+                ? '-top-2.5 text-xs bg-parchment dark:bg-zinc-950 px-1 text-char dark:text-zinc-200'
+                : 'top-1/2 -translate-y-1/2 text-drift dark:text-zinc-500'
               }
-              ${Icon && !floatingLabel ? 'pl-7' : ''}
               ${error ? 'text-red-600/70 dark:text-red-400' : ''}
               ${isFocused && !error ? 'text-[var(--color-accent)]' : ''}
             `}
             animate={{
-              y: floatingLabel && isFloating ? 0 : floatingLabel ? '50%' : 0,
-              scale: floatingLabel && isFloating ? 0.85 : 1,
+              y: isFloating ? 0 : '50%',
+              scale: isFloating ? 0.85 : 1,
             }}
             transition={{ duration: durations.fast, ease: easings.easeOut }}
           >
