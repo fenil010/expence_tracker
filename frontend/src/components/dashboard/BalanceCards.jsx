@@ -23,7 +23,7 @@ function StatCard({ label, amount, change, type }) {
   const isPositive = type === 'income' || (change && change > 0);
   const Icon = iconMap[type] || Wallet;
   const currency = getDefaultCurrency();
-  
+
   // Count-up animation for the amount
   const animatedAmount = useCountUp(typeof amount === 'number' ? amount : 0, 1200);
 
@@ -36,7 +36,7 @@ function StatCard({ label, amount, change, type }) {
     >
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm text-drift dark:text-zinc-400 font-medium">{label}</span>
-        <div className="w-8 h-8 rounded-lg bg-sand/60 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-sand/60 dark:bg-zinc-800 flex items-center justify-center shrink-0">
           <Icon className="w-4 h-4 text-char dark:text-zinc-300" strokeWidth={1.8} />
         </div>
       </div>
@@ -45,9 +45,8 @@ function StatCard({ label, amount, change, type }) {
       </div>
       {change !== undefined && change !== null && (
         <div className="mt-3 flex items-center gap-1.5">
-          <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-xs font-medium ${
-            isPositive ? 'bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-700/70 dark:text-emerald-400' : 'bg-red-50/50 dark:bg-red-950/40 text-red-700/60 dark:text-red-400'
-          }`}>
+          <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-xs font-medium ${isPositive ? 'bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-700/70 dark:text-emerald-400' : 'bg-red-50/50 dark:bg-red-950/40 text-red-700/60 dark:text-red-400'
+            }`}>
             {isPositive ? (
               <ArrowUpRight className="w-3 h-3" />
             ) : (

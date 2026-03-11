@@ -62,10 +62,10 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="flex items-center gap-2 text-sm"
           >
-          <span className="text-drift dark:text-zinc-500">Ledger</span>
-          <span className="text-stone dark:text-zinc-700">/</span>
-          <span className="font-medium text-char dark:text-zinc-200">{title}</span>
-        </motion.div>
+            <span className="text-drift dark:text-zinc-500">Ledger</span>
+            <span className="text-stone dark:text-zinc-700">/</span>
+            <span className="font-medium text-char dark:text-zinc-200">{title}</span>
+          </motion.div>
         </div>
 
         {/* Right side */}
@@ -118,8 +118,8 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
               transition-all duration-300 cursor-pointer
             "
           >
-            <Plus className="w-4 h-4 flex-shrink-0" />
-            <span className="hidden sm:inline flex-shrink-0">Add Transaction</span>
+            <Plus className="w-4 h-4 shrink-0" />
+            <span className="hidden sm:inline shrink-0">Add Transaction</span>
           </motion.button>
 
           {/* Avatar dropdown */}

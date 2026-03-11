@@ -6,8 +6,8 @@ import { formatCurrency } from '../../utils/currencies';
 
 function TransactionItem({ transaction }) {
   const date = new Date(transaction.date);
-  const formattedDate = date.toLocaleDateString('en-US', { 
-    month: 'short', 
+  const formattedDate = date.toLocaleDateString('en-US', {
+    month: 'short',
     day: 'numeric',
     year: 'numeric'
   });
@@ -31,12 +31,11 @@ function TransactionItem({ transaction }) {
               </p>
             </div>
           </div>
-          <div className="ml-3 flex-shrink-0">
-            <p className={`text-sm font-semibold tabular-nums ${
-              transaction.type === 'income' 
-                ? 'text-green-600 dark:text-green-400' 
+          <div className="ml-3 shrink-0">
+            <p className={`text-sm font-semibold tabular-nums ${transaction.type === 'income'
+                ? 'text-green-600 dark:text-green-400'
                 : 'text-obsidian dark:text-white'
-            }`}>
+              }`}>
               {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount), transaction.currency || 'USD')}
             </p>
           </div>
@@ -46,12 +45,12 @@ function TransactionItem({ transaction }) {
   );
 }
 
-export default function TransactionDetailPanel({ 
-  isOpen, 
-  onClose, 
-  category, 
+export default function TransactionDetailPanel({
+  isOpen,
+  onClose,
+  category,
   transactions = [],
-  loading = false 
+  loading = false
 }) {
   const panelRef = useRef(null);
   const closeButtonRef = useRef(null);
@@ -84,7 +83,7 @@ export default function TransactionDetailPanel({
         const focusableElements = panelRef.current?.querySelectorAll(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
-        
+
         if (!focusableElements || focusableElements.length === 0) return;
 
         const firstElement = focusableElements[0];
@@ -118,7 +117,7 @@ export default function TransactionDetailPanel({
             className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40 backdrop-blur-sm"
             aria-hidden="true"
           />
-          
+
           {/* Panel */}
           <motion.div
             ref={panelRef}
@@ -138,7 +137,7 @@ export default function TransactionDetailPanel({
                             border-b border-stone/20 dark:border-zinc-800 
                             px-6 py-4 flex items-center justify-between z-10">
               <div>
-                <h2 
+                <h2
                   id="panel-title"
                   className="text-lg font-semibold text-obsidian dark:text-white"
                 >
@@ -160,13 +159,13 @@ export default function TransactionDetailPanel({
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             {/* Content */}
             <div className="p-6">
               {loading ? (
                 <div className="space-y-3">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <div 
+                    <div
                       key={i}
                       className="h-20 bg-sand/50 dark:bg-zinc-800 rounded-xl animate-pulse"
                     />

@@ -106,13 +106,13 @@ const Button = forwardRef(({
       <span className="relative flex items-center justify-center gap-2 whitespace-nowrap">
         {loading ? (
           <motion.span
-            className="w-4 h-4 border-2 border-current border-t-transparent rounded-full flex-shrink-0"
+            className="w-4 h-4 border-2 border-current border-t-transparent rounded-full shrink-0"
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           />
         ) : Icon ? (
           <motion.span
-            className="flex-shrink-0"
+            className="shrink-0"
             initial={{ scale: 1 }}
             whileHover={{ scale: 1.1, rotate: 5 }}
             transition={{ duration: durations.fast }}
@@ -120,10 +120,10 @@ const Button = forwardRef(({
             <Icon className="w-4 h-4" />
           </motion.span>
         ) : null}
-        <span className="flex-shrink-0">{children}</span>
+        <span className="shrink-0">{children}</span>
         {IconRight && !loading && (
           <motion.span
-            className="flex-shrink-0"
+            className="shrink-0"
             initial={{ scale: 1 }}
             whileHover={{ scale: 1.1, rotate: -5 }}
             transition={{ duration: durations.fast }}
