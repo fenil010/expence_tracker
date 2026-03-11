@@ -6,6 +6,8 @@
  */
 
 import mongoose from 'mongoose';
+import { getExchangeRate } from '../utils/currencyConverter.js';
+import User from './User.js';
 
 const transactionSchema = new mongoose.Schema({
   // User reference
@@ -212,9 +214,23 @@ transactionSchema.virtual('signedAmount').get(function () {
 // PRE-SAVE MIDDLEWARE
 // ========================================================================
 
-transactionSchema.pre('save', function (next) {
-  if (this.isModified('amount') || this.isModified('exchangeRate')) {
-    this.amountInBaseCurrency = Math.round(this.amount * this.exchangeRate * 100) / 100;
+transactionSchema.pre('save', async function (next) {
+  if (this.isModified('amount') || this.isModified('currency')) {
+    try {
+      // Find the user to get their base currency
+      const user = await User.findById(this.user).select('currency');
+      const baseCurrency = user?.currency || 'USD';
+
+      // Calculate live exchange rate
+      this.exchangeRate = await getExchangeRate(this.currency, baseCurrency);
+
+      // Compute standardized amount in user's home currency
+      this.amountInBaseCurrency = Math.round(this.amount * this.exchangeRate * 100) / 100;
+    } catch (err) {
+      console.error('Exchange rate error in transaction pre-save:', err);
+      // Fallback if network totally fails
+      this.amountInBaseCurrency = this.amount;
+    }
   }
   next();
 });
@@ -279,7 +295,7 @@ transactionSchema.statics.getCategoryTotals = async function (userId, startDate,
         categoryName: { $first: '$categoryInfo.name' },
         categoryIcon: { $first: '$categoryInfo.icon' },
         categoryColor: { $first: '$categoryInfo.color' },
-        total: { $sum: '$amount' },
+        total: { $sum: '$amountInBaseCurrency' },
         count: { $sum: 1 }
       }
     },
@@ -312,7 +328,7 @@ transactionSchema.statics.getMonthlyTrend = async function (userId, months = 6) 
           month: { $month: '$date' },
           type: '$type'
         },
-        total: { $sum: '$amount' },
+        total: { $sum: '$amountInBaseCurrency' },
         count: { $sum: 1 }
       }
     },
@@ -338,11 +354,11 @@ transactionSchema.statics.getQuickStats = async function (userId, startDate, end
     {
       $group: {
         _id: '$type',
-        total: { $sum: '$amount' },
+        total: { $sum: '$amountInBaseCurrency' },
         count: { $sum: 1 },
-        avg: { $avg: '$amount' },
-        max: { $max: '$amount' },
-        min: { $min: '$amount' }
+        avg: { $avg: '$amountInBaseCurrency' },
+        max: { $max: '$amountInBaseCurrency' },
+        min: { $min: '$amountInBaseCurrency' }
       }
     }
   ]);

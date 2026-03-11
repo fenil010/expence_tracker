@@ -32,7 +32,7 @@ function StatCard({ label, amount, change, type }) {
       variants={item}
       whileHover={{ y: -4, boxShadow: '0 8px 24px rgba(26, 23, 20, 0.08)' }}
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="bg-linen dark:bg-zinc-900 border border-stone/20 dark:border-zinc-800 rounded-2xl p-5 shadow-soft overflow-hidden"
+      className="bg-linen dark:bg-zinc-900 border border-stone/20 dark:border-zinc-800 rounded-2xl p-6 shadow-soft overflow-hidden"
     >
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm text-drift dark:text-zinc-400 font-medium">{label}</span>

@@ -55,7 +55,7 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
       {
         $group: {
           _id: '$type',
-          total: { $sum: '$amount' },
+          total: { $sum: '$amountInBaseCurrency' },
           count: { $sum: 1 }
         }
       }
@@ -74,7 +74,7 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
       {
         $group: {
           _id: '$type',
-          total: { $sum: '$amount' },
+          total: { $sum: '$amountInBaseCurrency' },
           count: { $sum: 1 }
         }
       }
@@ -200,7 +200,7 @@ router.get('/monthly', [
       $facet: {
         // Income vs Expense totals
         totals: [
-          { $group: { _id: '$type', total: { $sum: '$amount' }, count: { $sum: 1 } } }
+          { $group: { _id: '$type', total: { $sum: '$amountInBaseCurrency' }, count: { $sum: 1 } } }
         ],
         // Category breakdown
         byCategory: [
@@ -219,7 +219,7 @@ router.get('/monthly', [
               name: { $first: '$cat.name' },
               icon: { $first: '$cat.icon' },
               color: { $first: '$cat.color' },
-              total: { $sum: '$amount' },
+              total: { $sum: '$amountInBaseCurrency' },
               count: { $sum: 1 }
             }
           },
@@ -230,7 +230,7 @@ router.get('/monthly', [
           {
             $group: {
               _id: { day: { $dayOfMonth: '$date' }, type: '$type' },
-              total: { $sum: '$amount' }
+              total: { $sum: '$amountInBaseCurrency' }
             }
           },
           { $sort: { '_id.day': 1 } }
@@ -241,7 +241,7 @@ router.get('/monthly', [
           {
             $group: {
               _id: '$merchant',
-              total: { $sum: '$amount' },
+              total: { $sum: '$amountInBaseCurrency' },
               count: { $sum: 1 }
             }
           },
@@ -315,13 +315,13 @@ router.get('/yearly', [
     {
       $facet: {
         totals: [
-          { $group: { _id: '$type', total: { $sum: '$amount' }, count: { $sum: 1 } } }
+          { $group: { _id: '$type', total: { $sum: '$amountInBaseCurrency' }, count: { $sum: 1 } } }
         ],
         monthly: [
           {
             $group: {
               _id: { month: { $month: '$date' }, type: '$type' },
-              total: { $sum: '$amount' },
+              total: { $sum: '$amountInBaseCurrency' },
               count: { $sum: 1 }
             }
           },
@@ -343,7 +343,7 @@ router.get('/yearly', [
               name: { $first: '$cat.name' },
               icon: { $first: '$cat.icon' },
               color: { $first: '$cat.color' },
-              total: { $sum: '$amount' },
+              total: { $sum: '$amountInBaseCurrency' },
               count: { $sum: 1 }
             }
           },

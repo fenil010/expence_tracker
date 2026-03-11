@@ -104,7 +104,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active"
-                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-[var(--color-accent)] rounded-full"
+                      className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-5 bg-[var(--color-accent)] rounded-full"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     />
                   )}

@@ -79,7 +79,7 @@ export default function SpendingChart({ data = [], className = '' }) {
                 <p className="text-sm text-drift dark:text-zinc-400 mb-4">Start tracking your expenses to see spending trends over time</p>
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('openAddTransaction'))}
-                  className="inline-flex items-center gap-2 px-4 py-2 whitespace-nowrap bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent)]/90 text-linen dark:text-white text-sm font-medium rounded-lg hover:shadow-lg hover:shadow-[var(--color-accent)]/20 transition-all duration-300"
+                  className="inline-flex items-center gap-2 px-4 py-2 whitespace-nowrap bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent)]/90 text-[var(--color-accent-fg)] text-sm font-medium rounded-lg hover:shadow-lg hover:shadow-[var(--color-accent)]/20 transition-all duration-300"
                 >
                   <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

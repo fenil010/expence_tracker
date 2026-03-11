@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { buttonVariants, durations, easings } from '../../utils/animations';
 
 const variants = {
-  primary: 'bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent)]/90 text-white dark:text-white hover:shadow-lg hover:shadow-[var(--color-accent)]/20',
+  primary: 'bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent)]/90 text-[var(--color-accent-fg)] hover:shadow-lg hover:shadow-[var(--color-accent)]/20',
   secondary: 'bg-linen dark:bg-zinc-800 text-char dark:text-zinc-200 border border-stone dark:border-zinc-700 hover:bg-sand dark:hover:bg-zinc-700',
   ghost: 'bg-transparent text-char dark:text-zinc-300 hover:bg-sand dark:hover:bg-zinc-800',
   danger: 'bg-parchment dark:bg-red-950/30 text-red-800/70 dark:text-red-400 border border-red-200/50 dark:border-red-800/40 hover:bg-red-50/50 dark:hover:bg-red-950/50',

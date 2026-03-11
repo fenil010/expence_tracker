@@ -58,12 +58,12 @@ export default function Dashboard() {
   if (loading) {
     return (
       <PageWrapper title="Dashboard" subtitle="Welcome back">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <CardSkeleton />
           <CardSkeleton />
           <CardSkeleton />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <ChartSkeleton />
           <ChartSkeleton />
         </div>
@@ -145,7 +145,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         <SpendingChart data={monthlyData} className="lg:col-span-3" />
         <CategoryBreakdown data={categoryData} className="lg:col-span-2" />
       </div>

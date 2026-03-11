@@ -29,10 +29,23 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    // Not required — OAuth users don't have a password
     minlength: [8, 'Password must be at least 8 characters'],
     maxlength: [128, 'Password cannot exceed 128 characters'],
     select: false
+  },
+
+  // OAuth fields
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,   // Allows null for non-Google users
+    index: true
+  },
+  authProvider: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local'
   },
 
   // Profile information
@@ -162,7 +175,7 @@ userSchema.virtual('isLocked').get(function () {
 // ========================================================================
 
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return next();
   }
   const salt = await bcrypt.genSalt(14);
@@ -175,6 +188,7 @@ userSchema.pre('save', async function (next) {
 // ========================================================================
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
+  if (!this.password) return false; // OAuth users have no password
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

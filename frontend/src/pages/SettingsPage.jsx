@@ -59,10 +59,15 @@ export default function SettingsPage() {
     }
   };
 
-  const handleCurrencyChange = (newCurrency) => {
+  const handleCurrencyChange = async (newCurrency) => {
     setDefaultCurrencyState(newCurrency);
     setDefaultCurrency(newCurrency);
-    toast('Default currency updated', 'success');
+    try {
+      await authApi.updateProfile({ currency: newCurrency });
+      toast('Default currency updated', 'success');
+    } catch (err) {
+      toast('Failed to sync currency preference to server', 'error');
+    }
   };
 
   const currencyOptions = CURRENCIES.map((c) => ({

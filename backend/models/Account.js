@@ -6,6 +6,8 @@
  */
 
 import mongoose from 'mongoose';
+import { getExchangeRate } from '../utils/currencyConverter.js';
+import User from './User.js';
 
 const accountSchema = new mongoose.Schema({
     user: {
@@ -129,11 +131,33 @@ accountSchema.statics.getDefaultAccount = async function (userId) {
 };
 
 accountSchema.statics.getTotalBalance = async function (userId) {
-    const result = await this.aggregate([
-        { $match: { user: new mongoose.Types.ObjectId(userId), isActive: true } },
-        { $group: { _id: null, total: { $sum: '$balance' } } }
-    ]);
-    return result[0]?.total || 0;
+    const user = await User.findById(userId).select('currency');
+    const baseCurrency = user?.currency || 'USD';
+
+    // Fetch all active accounts
+    const accounts = await this.find({
+        user: new mongoose.Types.ObjectId(userId),
+        isActive: true
+    });
+
+    if (!accounts.length) return 0;
+
+    // Convert each account balance to the user's base currency
+    let totalBalance = 0;
+    for (const account of accounts) {
+        if (!account.balance) continue;
+
+        try {
+            const exchangeRate = await getExchangeRate(account.currency || 'USD', baseCurrency);
+            totalBalance += (account.balance * exchangeRate);
+        } catch (err) {
+            console.error(`Failed to convert balance for account ${account._id}:`, err);
+            // Fallback (naive sum) if conversion fails
+            totalBalance += account.balance;
+        }
+    }
+
+    return Math.round(totalBalance * 100) / 100;
 };
 
 /**

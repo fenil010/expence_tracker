@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api, { authApi } from '../services/api';
+import { setDefaultCurrency } from '../utils/currencies';
 
 const AuthContext = createContext(null);
 
@@ -18,6 +19,9 @@ export function AuthProvider({ children }) {
         try {
           const response = await authApi.getProfile();
           setUser(response.data);
+          if (response.data?.currency) {
+            setDefaultCurrency(response.data.currency);
+          }
         } catch (err) {
           api.setToken(null);
           api.setRefreshToken(null);
@@ -37,6 +41,9 @@ export function AuthProvider({ children }) {
       api.setToken(response.data.token);
       api.setRefreshToken(response.data.refreshToken);
       setUser(response.data.user);
+      if (response.data.user?.currency) {
+        setDefaultCurrency(response.data.user.currency);
+      }
       return response.data;
     } catch (err) {
       setError(err.message);
@@ -48,6 +55,20 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const response = await authApi.register(data);
+      api.setToken(response.data.token);
+      api.setRefreshToken(response.data.refreshToken);
+      setUser(response.data.user);
+      return response.data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, []);
+
+  const googleLogin = useCallback(async (idToken) => {
+    setError(null);
+    try {
+      const response = await authApi.googleLogin(idToken);
       api.setToken(response.data.token);
       api.setRefreshToken(response.data.refreshToken);
       setUser(response.data.user);
@@ -81,6 +102,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     login,
     register,
+    googleLogin,
     logout,
     updateProfile,
     clearError: () => setError(null)

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Check } from 'lucide-react';
@@ -26,7 +26,7 @@ function getPasswordStrength(password) {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const { login, register, googleLogin } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -34,6 +34,41 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const strength = useMemo(() => getPasswordStrength(form.password), [form.password]);
+  const googleButtonRef = useRef(null);
+
+  useEffect(() => {
+    // Wait for the Google script to load
+    const initGoogle = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: async (response) => {
+            setError('');
+            setLoading(true);
+            try {
+              await googleLogin(response.credential);
+              navigate('/');
+            } catch (err) {
+              setError(err.message || 'Google sign-in failed');
+            } finally {
+              setLoading(false);
+            }
+          },
+        });
+
+        if (googleButtonRef.current) {
+          window.google.accounts.id.renderButton(
+            googleButtonRef.current,
+            { theme: document.documentElement.classList.contains('dark') ? 'filled_black' : 'outline', size: 'large', width: '100%', text: 'continue_with' }
+          );
+        }
+      } else {
+        setTimeout(initGoogle, 100);
+      }
+    };
+
+    initGoogle();
+  }, [googleLogin, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -209,8 +244,8 @@ export default function LoginPage() {
                           <span
                             key={label}
                             className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md transition-colors duration-200 ${test
-                                ? 'text-emerald-700/70 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30'
-                                : 'text-drift/60 dark:text-zinc-600 bg-sand/40 dark:bg-zinc-800'
+                              ? 'text-emerald-700/70 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30'
+                              : 'text-drift/60 dark:text-zinc-600 bg-sand/40 dark:bg-zinc-800'
                               }`}
                           >
                             {test && <Check className="w-2.5 h-2.5 inline mr-0.5 -mt-0.5" />}
@@ -246,7 +281,7 @@ export default function LoginPage() {
               disabled={loading}
               className="
                 w-full flex items-center justify-center gap-2
-                py-3 bg-[var(--color-accent)] text-white
+                py-3 bg-[var(--color-accent)] text-[var(--color-accent-fg)]
                 text-sm font-medium rounded-xl
                 hover:opacity-90 transition-all duration-300
                 disabled:opacity-40 cursor-pointer
@@ -263,8 +298,25 @@ export default function LoginPage() {
             </motion.button>
           </form>
 
+          {/* Divider */}
+          <div className="relative mt-8 mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-stone/20 dark:border-zinc-800"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-linen dark:bg-zinc-900 text-drift dark:text-zinc-500">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          {/* Google Button Container */}
+          <div className="w-full flex justify-center mb-6">
+            <div ref={googleButtonRef} className="w-full max-w-[280px]"></div>
+          </div>
+
           {/* Toggle */}
-          <p className="text-center text-sm text-drift dark:text-zinc-400 mt-6">
+          <p className="text-center text-sm text-drift dark:text-zinc-400">
             {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
             <button
               onClick={() => {

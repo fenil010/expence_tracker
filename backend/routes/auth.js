@@ -17,6 +17,7 @@ import asyncHandler from '../middleware/asyncHandler.js';
 import validate from '../middleware/validate.js';
 import withTransaction from '../utils/withTransaction.js';
 import { body } from 'express-validator';
+import verifyGoogleToken from '../utils/google.js';
 
 const router = express.Router();
 
@@ -133,6 +134,95 @@ router.post('/login', [
 
   // Reset login attempts and update last login
   await user.resetLoginAttempts();
+
+  // Generate tokens
+  const token = user.generateAuthToken();
+  const refreshToken = user.generateRefreshToken();
+  await user.save();
+
+  res.json({
+    success: true,
+    data: {
+      user: user.toPublicJSON(),
+      token,
+      refreshToken
+    }
+  });
+}));
+
+/**
+ * @route   POST /api/auth/google
+ * @desc    Sign in or register with Google OAuth
+ * @access  Public
+ */
+router.post('/google', [
+  body('idToken').notEmpty().withMessage('Google ID token is required'),
+  validate
+], asyncHandler(async (req, res) => {
+  const { idToken } = req.body;
+
+  // Verify the Google ID token
+  const googleUser = await verifyGoogleToken(idToken);
+
+  // Check if user exists by googleId OR matching email
+  let user = await User.findOne({
+    $or: [
+      { googleId: googleUser.googleId },
+      { email: googleUser.email }
+    ],
+    deletedAt: null
+  }).select('+refreshToken');
+
+  if (user) {
+    // Existing user — link Google account if not already linked
+    if (!user.googleId) {
+      user.googleId = googleUser.googleId;
+      user.authProvider = user.authProvider === 'local' ? 'local' : 'google';
+      if (googleUser.picture && !user.avatar) {
+        user.avatar = googleUser.picture;
+      }
+    }
+
+    // Check if account is active
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Account has been deactivated'
+      });
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
+  } else {
+    // New user — create account with defaults
+    const result = await withTransaction(async (session) => {
+      const opts = session ? { session } : {};
+      const users = await User.create([{
+        name: googleUser.name,
+        email: googleUser.email,
+        googleId: googleUser.googleId,
+        authProvider: 'google',
+        avatar: googleUser.picture,
+        isVerified: true,
+        lastLogin: new Date(),
+      }], opts);
+      const newUser = users[0];
+
+      // Create all defaults
+      await Promise.all([
+        Category.createDefaultsForUser(newUser._id, session),
+        Budget.createDefaultMonthlyBudget(newUser._id, undefined, session),
+        Goal.createEmergencyFundGoal(newUser._id, session),
+        Account.createDefaultsForUser(newUser._id, session)
+      ]);
+
+      return newUser;
+    });
+
+    user = result;
+  }
 
   // Generate tokens
   const token = user.generateAuthToken();
@@ -275,6 +365,24 @@ router.put('/password', protect, [
   const { currentPassword, newPassword } = req.body;
 
   const user = await User.findById(req.user._id).select('+password');
+
+  // OAuth users without a password can set one for the first time
+  if (!user.password) {
+    if (currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'You signed in with Google. Leave current password blank to set a new one.'
+      });
+    }
+    user.password = newPassword;
+    await user.save();
+    const token = user.generateAuthToken();
+    return res.json({
+      success: true,
+      message: 'Password set successfully. You can now login with email and password too.',
+      data: { token }
+    });
+  }
 
   const isMatch = await user.comparePassword(currentPassword);
   if (!isMatch) {
