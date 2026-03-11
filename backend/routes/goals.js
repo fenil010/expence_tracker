@@ -165,19 +165,28 @@ router.get('/:id/contributions', [
  * @access  Private
  */
 router.post('/', [
-  body('name').trim().notEmpty().withMessage('Goal name is required'),
-  body('targetAmount').isFloat({ min: 1 }).withMessage('Target amount must be at least 1'),
+  body('name').trim().notEmpty().withMessage('Goal name is required').isLength({ max: 100 }).withMessage('Name max 100 characters'),
+  body('targetAmount').isFloat({ min: 1, max: 999999999 }).withMessage('Target amount must be between 1 and 999,999,999'),
   body('category').optional().isIn([
     'emergency', 'vacation', 'purchase', 'investment', 'education',
     'home', 'car', 'wedding', 'retirement', 'other'
   ]),
   body('targetDate').optional().isISO8601(),
   body('priority').optional().isIn(['high', 'medium', 'low']),
+  body('description').optional().trim().isLength({ max: 500 }),
   validate
 ], asyncHandler(async (req, res) => {
+  // SECURITY: Whitelist fields — do NOT spread req.body
   const goal = await Goal.create({
-    ...req.body,
-    user: req.user._id
+    user: req.user._id,
+    name: req.body.name,
+    description: req.body.description || '',
+    targetAmount: parseFloat(req.body.targetAmount),
+    targetDate: req.body.targetDate || undefined,
+    category: req.body.category || undefined,
+    priority: req.body.priority || 'medium',
+    color: req.body.color || undefined,
+    icon: req.body.icon || undefined,
   });
 
   res.status(201).json({
@@ -223,9 +232,14 @@ router.put('/:id', [
     }
   });
 
-  // Update milestones if provided
+  // Update milestones if provided — validate each item
   if (req.body.milestones && Array.isArray(req.body.milestones)) {
-    goal.milestones = req.body.milestones;
+    const safeMilestones = req.body.milestones.slice(0, 20).map(m => ({
+      name: typeof m.name === 'string' ? m.name.slice(0, 100) : '',
+      amount: typeof m.amount === 'number' && m.amount >= 0 ? m.amount : 0,
+      reached: typeof m.reached === 'boolean' ? m.reached : false,
+    }));
+    goal.milestones = safeMilestones;
   }
 
   await goal.save();

@@ -31,6 +31,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Password is required'],
     minlength: [8, 'Password must be at least 8 characters'],
+    maxlength: [128, 'Password cannot exceed 128 characters'],
     select: false
   },
 
@@ -164,7 +165,7 @@ userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     return next();
   }
-  const salt = await bcrypt.genSalt(12);
+  const salt = await bcrypt.genSalt(14);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
@@ -179,9 +180,13 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 
 userSchema.methods.generateAuthToken = function () {
   return jwt.sign(
-    { id: this._id, email: this.email, role: this.role },
+    { id: this._id, role: this.role },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE || '7d' }
+    {
+      expiresIn: process.env.JWT_EXPIRE || '1d',
+      audience: 'expense-tracker',
+      issuer: 'expense-tracker-api',
+    }
   );
 };
 

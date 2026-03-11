@@ -10,6 +10,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
+import hpp from 'hpp';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 
@@ -40,7 +42,22 @@ const PORT = process.env.PORT || 5000;
 // Helmet - Set security HTTP headers
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'blob:'],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
 }));
 
 // CORS - Enable Cross-Origin Resource Sharing
@@ -77,16 +94,29 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 
 // ========================================================================
 // BODY PARSING & LOGGING
 // ========================================================================
 
-// Parse JSON bodies (with size limit for security)
-app.use(express.json({ limit: '10mb' }));
+// Parse JSON bodies (tight size limit to prevent payload bombs)
+app.use(express.json({ limit: '1mb' }));
 
 // Parse URL-encoded bodies
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// NoSQL injection prevention — strips $-prefixed operators from req.body/query/params
+app.use(mongoSanitize({
+  replaceWith: '_',
+  onSanitize: ({ req, key }) => {
+    console.warn(`[SECURITY] Sanitized ${key} in request from ${req.ip}`);
+  }
+}));
+
+// HTTP Parameter Pollution protection
+app.use(hpp());
 
 // HTTP request logging
 if (process.env.NODE_ENV === 'development') {

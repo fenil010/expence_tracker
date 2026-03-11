@@ -25,8 +25,8 @@ const validate = (req, res, next) => {
             message: 'Validation failed',
             errors: errors.array().map(err => ({
                 field: err.path,
-                message: err.msg,
-                value: err.value
+                message: err.msg
+                // SECURITY: Do NOT echo err.value — prevents info leakage + reflected XSS
             }))
         });
     }

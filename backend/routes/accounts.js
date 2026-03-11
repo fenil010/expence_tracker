@@ -63,18 +63,26 @@ router.get('/:id', [
  * @access  Private
  */
 router.post('/', [
-    body('name').trim().notEmpty().withMessage('Account name is required'),
+    body('name').trim().notEmpty().withMessage('Account name is required').isLength({ max: 100 }).withMessage('Name max 100 characters'),
     body('type').isIn([
         'cash', 'bank', 'credit_card', 'digital_wallet', 'investment', 'savings', 'other'
     ]).withMessage('Invalid account type'),
-    body('balance').optional().isFloat(),
+    body('balance').optional().isFloat({ min: -999999999, max: 999999999 }).withMessage('Balance out of range'),
     body('currency').optional().isLength({ min: 3, max: 3 }),
     body('color').optional().matches(/^#[0-9A-Fa-f]{6}$/),
+    body('notes').optional().trim().isLength({ max: 500 }),
     validate
 ], asyncHandler(async (req, res) => {
+    // SECURITY: Whitelist fields — do NOT spread req.body
     const account = await Account.create({
-        ...req.body,
-        user: req.user._id
+        user: req.user._id,
+        name: req.body.name,
+        type: req.body.type,
+        balance: parseFloat(req.body.balance) || 0,
+        currency: req.body.currency || undefined,
+        color: req.body.color || undefined,
+        icon: req.body.icon || undefined,
+        notes: req.body.notes || '',
     });
 
     res.status(201).json({

@@ -16,6 +16,8 @@ import asyncHandler from '../middleware/asyncHandler.js';
 import validate from '../middleware/validate.js';
 import { body, query as queryValidator, param } from 'express-validator';
 
+import { escapeRegex } from '../utils/sanitize.js';
+
 const router = express.Router();
 
 router.use(protect);
@@ -35,7 +37,7 @@ router.get('/', [
   queryValidator('account').optional().isMongoId(),
   queryValidator('sortBy').optional().isIn(['date', 'amount', 'createdAt']),
   queryValidator('sortOrder').optional().isIn(['asc', 'desc']),
-  queryValidator('search').optional().isString(),
+  queryValidator('search').optional().isString().trim().isLength({ max: 200 }),
   validate
 ], asyncHandler(async (req, res) => {
   const {
@@ -63,10 +65,10 @@ router.get('/', [
     if (mongoose.Types.ObjectId.isValid(category)) {
       filter.category = new mongoose.Types.ObjectId(category);
     } else {
-      // Look up category by name
+      // SECURITY: Escape regex special chars to prevent ReDoS injection
       const categoryDoc = await Category.findOne({
         user: req.user._id,
-        name: new RegExp(`^${category}$`, 'i'),
+        name: new RegExp(`^${escapeRegex(category)}$`, 'i'),
         isActive: true
       });
       if (categoryDoc) {
@@ -278,10 +280,22 @@ router.post('/', [
   // Use DB session for atomicity (graceful fallback on standalone MongoDB)
   const transaction = await withTransaction(async (session) => {
     const opts = session ? { session } : {};
-    const [tx] = await Transaction.create([{
-      ...req.body,
-      user: req.user._id
-    }], opts);
+    // SECURITY: Whitelist fields — do NOT spread req.body to prevent mass assignment
+    const txData = {
+      type: req.body.type,
+      amount: parseFloat(req.body.amount),
+      category: req.body.category,
+      account: req.body.account || undefined,
+      toAccount: req.body.toAccount || undefined,
+      description: req.body.description || '',
+      date: req.body.date || new Date(),
+      paymentMethod: req.body.paymentMethod || undefined,
+      merchant: req.body.merchant || undefined,
+      notes: req.body.notes || undefined,
+      tags: Array.isArray(req.body.tags) ? req.body.tags.slice(0, 10) : undefined,
+      user: req.user._id,
+    };
+    const [tx] = await Transaction.create([txData], opts);
 
     // Update account balance
     if (req.body.account) {
@@ -336,10 +350,13 @@ router.post('/bulk', [
 ], asyncHandler(async (req, res) => {
   const { transactions: txList } = req.body;
 
-  const docs = txList.map(tx => ({
-    ...tx,
-    user: req.user._id
-  }));
+  // SECURITY: Whitelist fields per transaction — do NOT spread tx
+  const allowedBulkFields = ['type', 'amount', 'category', 'account', 'description', 'date', 'merchant', 'paymentMethod'];
+  const docs = txList.map(tx => {
+    const clean = { user: req.user._id };
+    allowedBulkFields.forEach(f => { if (tx[f] !== undefined) clean[f] = tx[f]; });
+    return clean;
+  });
 
   const created = await Transaction.insertMany(docs);
 

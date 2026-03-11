@@ -19,8 +19,11 @@ export const protect = async (req, res, next) => {
       // Get token from header
       token = req.headers.authorization.split(' ')[1];
 
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      // Verify token with audience/issuer binding
+      const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+        audience: 'expense-tracker',
+        issuer: 'expense-tracker-api',
+      });
 
       // Get user from database (exclude password)
       req.user = await User.findById(decoded.id).select('-password');
@@ -43,14 +46,14 @@ export const protect = async (req, res, next) => {
       next();
     } catch (error) {
       console.error('Auth middleware error:', error.message);
-      
+
       if (error.name === 'JsonWebTokenError') {
         return res.status(401).json({
           success: false,
           message: 'Invalid token'
         });
       }
-      
+
       if (error.name === 'TokenExpiredError') {
         return res.status(401).json({
           success: false,

@@ -24,7 +24,8 @@ class AppError extends Error {
  * Handle MongoDB Cast Error (invalid ObjectId)
  */
 const handleCastError = (err) => {
-  const message = `Invalid ${err.path}: ${err.value}`;
+  // SECURITY: Do not echo err.value — prevents probing valid IDs
+  const message = `Invalid value for ${err.path}`;
   return new AppError(message, 400);
 };
 
@@ -33,9 +34,9 @@ const handleCastError = (err) => {
  */
 const handleDuplicateKeyError = (err) => {
   const field = Object.keys(err.keyValue || {})[0];
-  const value = err.keyValue?.[field];
+  // SECURITY: Do not echo the duplicate value back to the user
   const message = field
-    ? `Duplicate value for "${field}": "${value}". Please use a different value.`
+    ? `A record with that ${field} already exists. Please use a different value.`
     : 'Duplicate field value. Please use a different value.';
   return new AppError(message, 400);
 };

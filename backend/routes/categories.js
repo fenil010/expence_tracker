@@ -13,6 +13,7 @@ import { protect } from '../middleware/auth.js';
 import asyncHandler from '../middleware/asyncHandler.js';
 import validate from '../middleware/validate.js';
 import { body, param, query as queryValidator } from 'express-validator';
+import { escapeRegex } from '../utils/sanitize.js';
 
 const router = express.Router();
 
@@ -93,7 +94,7 @@ router.post('/', [
   // Check for duplicates
   const existing = await Category.findOne({
     user: req.user._id,
-    name: new RegExp(`^${name}$`, 'i'),
+    name: new RegExp(`^${escapeRegex(name)}$`, 'i'),
     type,
     isActive: true
   });

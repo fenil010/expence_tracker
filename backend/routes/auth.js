@@ -26,12 +26,14 @@ const router = express.Router();
  * @access  Public
  */
 router.post('/register', [
-  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('name').trim().notEmpty().withMessage('Name is required').isLength({ max: 50 }).withMessage('Name max 50 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   body('password')
-    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .isLength({ min: 8, max: 128 }).withMessage('Password must be 8-128 characters')
+    .matches(/[a-z]/).withMessage('Password must contain a lowercase letter')
+    .matches(/[A-Z]/).withMessage('Password must contain an uppercase letter')
     .matches(/\d/).withMessage('Password must contain a number')
-    .matches(/[a-zA-Z]/).withMessage('Password must contain a letter'),
+    .matches(/[!@#$%^&*(),.?":{}|<>]/).withMessage('Password must contain a special character'),
   validate
 ], asyncHandler(async (req, res) => {
   const { name, email, password, currency } = req.body;
@@ -263,8 +265,11 @@ router.put('/profile', protect, [
 router.put('/password', protect, [
   body('currentPassword').notEmpty().withMessage('Current password is required'),
   body('newPassword')
-    .isLength({ min: 8 }).withMessage('New password must be at least 8 characters')
-    .matches(/\d/).withMessage('New password must contain a number'),
+    .isLength({ min: 8, max: 128 }).withMessage('New password must be 8-128 characters')
+    .matches(/[a-z]/).withMessage('Password must contain a lowercase letter')
+    .matches(/[A-Z]/).withMessage('Password must contain an uppercase letter')
+    .matches(/\d/).withMessage('New password must contain a number')
+    .matches(/[!@#$%^&*(),.?":{}|<>]/).withMessage('Password must contain a special character'),
   validate
 ], asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;

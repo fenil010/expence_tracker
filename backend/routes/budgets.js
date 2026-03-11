@@ -102,12 +102,14 @@ router.get('/:id', [
  * @access  Private
  */
 router.post('/', [
-  body('name').trim().notEmpty().withMessage('Budget name is required'),
+  body('name').trim().notEmpty().withMessage('Budget name is required').isLength({ max: 100 }).withMessage('Name max 100 characters'),
   body('type').isIn(['monthly', 'category', 'yearly', 'custom']).withMessage('Invalid budget type'),
-  body('amount').isFloat({ min: 0 }).withMessage('Amount must be positive'),
+  body('amount').isFloat({ min: 0, max: 999999999 }).withMessage('Amount must be between 0 and 999,999,999'),
   body('startDate').isISO8601().withMessage('Valid start date is required'),
   body('endDate').isISO8601().withMessage('Valid end date is required'),
   body('category').optional().isMongoId().withMessage('Valid category ID is required'),
+  body('alertThreshold').optional().isInt({ min: 1, max: 100 }).withMessage('Alert threshold 1-100'),
+  body('notes').optional().trim().isLength({ max: 500 }).withMessage('Notes max 500 characters'),
   validate
 ], asyncHandler(async (req, res) => {
   const { name, type, amount, startDate, endDate, category, alertThreshold, color, notes } = req.body;
