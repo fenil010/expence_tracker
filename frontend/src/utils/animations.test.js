@@ -22,23 +22,23 @@ import {
 describe('Animation Utilities', () => {
   describe('Timing Functions', () => {
     it('should export easing configurations', () => {
-      expect(easings.easeOut).toEqual([0.25, 0.46, 0.45, 0.94]);
-      expect(easings.easeIn).toEqual([0.55, 0.055, 0.675, 0.19]);
-      expect(easings.easeInOut).toEqual([0.645, 0.045, 0.355, 1]);
+      expect(easings.easeOut).toEqual([0.16, 1, 0.3, 1]);
+      expect(easings.easeIn).toEqual([0.5, 0, 0.84, 0.36]);
+      expect(easings.easeInOut).toEqual([0.65, 0, 0.35, 1]);
     });
 
     it('should export spring configurations', () => {
       expect(easings.spring).toHaveProperty('type', 'spring');
-      expect(easings.spring).toHaveProperty('stiffness', 300);
+      expect(easings.spring).toHaveProperty('stiffness', 280);
       expect(easings.spring).toHaveProperty('damping', 30);
     });
   });
 
   describe('Duration Scale', () => {
     it('should export duration values', () => {
-      expect(durations.fast).toBe(0.15);
-      expect(durations.normal).toBe(0.3);
-      expect(durations.slow).toBe(0.5);
+      expect(durations.fast).toBe(0.2);
+      expect(durations.normal).toBe(0.4);
+      expect(durations.slow).toBe(0.6);
     });
   });
 
@@ -181,7 +181,7 @@ describe('Animation Utilities', () => {
       expect(cardVariants).toHaveProperty('rest');
       expect(cardVariants).toHaveProperty('hover');
       expect(cardVariants).toHaveProperty('tap');
-      expect(cardVariants.hover.scale).toBe(1.02);
+      expect(cardVariants.hover.scale).toBe(1.015);
     });
 
     it('should export button variants', () => {

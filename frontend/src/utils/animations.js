@@ -11,18 +11,18 @@
 
 export const easings = {
   // Standard easings
-  easeOut: [0.25, 0.46, 0.45, 0.94],
-  easeIn: [0.55, 0.055, 0.675, 0.19],
-  easeInOut: [0.645, 0.045, 0.355, 1],
+  easeOut: [0.16, 1, 0.3, 1],
+  easeIn: [0.5, 0, 0.84, 0.36],
+  easeInOut: [0.65, 0, 0.35, 1],
   
   // Spring physics
-  spring: { type: "spring", stiffness: 300, damping: 30 },
-  springGentle: { type: "spring", stiffness: 200, damping: 25 },
-  springBouncy: { type: "spring", stiffness: 400, damping: 20 },
+  spring: { type: "spring", stiffness: 280, damping: 30, mass: 0.9 },
+  springGentle: { type: "spring", stiffness: 180, damping: 26, mass: 1 },
+  springBouncy: { type: "spring", stiffness: 360, damping: 22, mass: 0.8 },
   
   // Custom easings
-  smooth: [0.4, 0.0, 0.2, 1],
-  snappy: [0.8, 0.0, 0.2, 1],
+  smooth: [0.25, 0.1, 0.25, 1],
+  snappy: [0.2, 0.9, 0.2, 1],
 };
 
 // ============================================================================
@@ -31,11 +31,11 @@ export const easings = {
 
 export const durations = {
   instant: 0,
-  fast: 0.15,
-  normal: 0.3,
-  slow: 0.5,
-  slower: 0.8,
-  slowest: 1.2,
+  fast: 0.2,
+  normal: 0.4,
+  slow: 0.6,
+  slower: 0.9,
+  slowest: 1.3,
 };
 
 // ============================================================================
@@ -155,12 +155,12 @@ export const staggerItem = {
 export const cardVariants = {
   rest: { 
     scale: 1, 
-    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
     transition: { duration: durations.normal, ease: easings.easeOut }
   },
   hover: { 
-    scale: 1.02, 
-    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+    scale: 1.015, 
+    boxShadow: "0 12px 32px rgba(0,0,0,0.14)",
     transition: { duration: durations.normal, ease: easings.easeOut }
   },
   tap: {
