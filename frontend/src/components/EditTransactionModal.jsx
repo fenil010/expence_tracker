@@ -22,6 +22,7 @@ export default function EditTransactionModal({ isOpen, onClose, transaction, onS
                     ? new Date(transaction.date).toISOString().split('T')[0]
                     : new Date().toISOString().split('T')[0],
                 currency: transaction.currency || 'USD',
+                tags: Array.isArray(transaction.tags) ? transaction.tags.join(', ') : '',
             });
 
             categoryApi.getAll().then((res) => {
@@ -53,6 +54,9 @@ export default function EditTransactionModal({ isOpen, onClose, transaction, onS
         setLoading(true);
         try {
             const id = transaction._id || transaction.id;
+            const tags = form.tags
+                ? form.tags.split(',').map((tag) => tag.trim()).filter(Boolean).slice(0, 10)
+                : [];
             await transactionApi.update(id, {
                 type: form.type,
                 amount: parseFloat(form.amount),
@@ -61,6 +65,7 @@ export default function EditTransactionModal({ isOpen, onClose, transaction, onS
                 account: form.account || undefined,
                 date: form.date,
                 currency: form.currency,
+                tags: tags.length > 0 ? tags : undefined,
             });
             toast('Transaction updated', 'success');
             window.dispatchEvent(new CustomEvent('transactionAdded'));
@@ -160,6 +165,14 @@ export default function EditTransactionModal({ isOpen, onClose, transaction, onS
                             options={[{ value: '', label: 'No account' }, ...accountOptions]}
                         />
                     )}
+
+                    {/* Tags */}
+                    <Input
+                        label="Tags"
+                        placeholder="e.g. groceries, lunch"
+                        value={form.tags}
+                        onChange={(e) => handleChange('tags', e.target.value)}
+                    />
 
                     {/* Actions */}
                     <div className="flex items-center justify-end gap-3 pt-2">

@@ -73,6 +73,14 @@ const budgetSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  lastAlertAt: {
+    type: Date,
+    default: null
+  },
+  lastAlertUsage: {
+    type: Number,
+    default: null
+  },
 
   // Rollover settings
   rolloverEnabled: {

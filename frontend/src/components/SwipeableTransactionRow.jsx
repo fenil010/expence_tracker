@@ -65,9 +65,23 @@ export default function SwipeableTransactionRow({
               <ArrowDownRight className="w-4 h-4 text-char dark:text-zinc-400" />
             )}
           </div>
-          <span className="text-sm font-medium text-obsidian dark:text-zinc-200 truncate">
-            {tx.description || 'Transaction'}
-          </span>
+          <div className="min-w-0">
+            <span className="text-sm font-medium text-obsidian dark:text-zinc-200 truncate block">
+              {tx.description || 'Transaction'}
+            </span>
+            {Array.isArray(tx.tags) && tx.tags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1 mt-1">
+                {tx.tags.slice(0, 2).map((tag) => (
+                  <Badge key={tag} size="sm" className="bg-sand/60 dark:bg-zinc-800 text-drift dark:text-zinc-400">
+                    {tag}
+                  </Badge>
+                ))}
+                {tx.tags.length > 2 && (
+                  <span className="text-[11px] text-drift dark:text-zinc-500">+{tx.tags.length - 2}</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Category */}

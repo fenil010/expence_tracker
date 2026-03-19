@@ -8,9 +8,11 @@ import SpendingChart from '../components/dashboard/SpendingChart';
 import CategoryBreakdown from '../components/dashboard/CategoryBreakdown';
 import RecentTransactions from '../components/dashboard/RecentTransactions';
 import QuickActionButton from '../components/dashboard/QuickActionButton';
-import { reportApi, transactionApi } from '../services/api';
+import { reportApi, transactionApi, notificationApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency, getDefaultCurrency } from '../utils/currencies';
+import InsightsPanel from '../components/dashboard/InsightsPanel';
+import AlertsPanel from '../components/dashboard/AlertsPanel';
 
 function getGreeting(name) {
   const hour = new Date().getHours();
@@ -29,17 +31,32 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [dashboard, setDashboard] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [insights, setInsights] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+
+  const handleMarkAllAlertsRead = async () => {
+    try {
+      await notificationApi.markAllRead();
+      setAlerts((prev) => prev.map((alert) => ({ ...alert, read: true })));
+    } catch (err) {
+      console.error('Failed to mark alerts read:', err);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [dashRes, txRes] = await Promise.all([
+      const [dashRes, txRes, insightsRes, alertsRes] = await Promise.all([
         reportApi.getDashboard(),
         transactionApi.getAll({ limit: 6, sort: '-date' }),
+        reportApi.getInsights(),
+        notificationApi.getAll({ limit: 6, type: 'budget_alert' })
       ]);
       setDashboard(dashRes.data);
       setTransactions(txRes.data?.transactions || txRes.data || []);
+      setInsights(insightsRes.data?.insights || []);
+      setAlerts(alertsRes.data || []);
     } catch (err) {
       console.error('Dashboard fetch error:', err);
       setError('Failed to load dashboard data');
@@ -186,6 +203,11 @@ export default function Dashboard() {
           <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-(--color-accent)/15 blur-3xl" />
         </Card>
       )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <InsightsPanel insights={insights} />
+        <AlertsPanel alerts={alerts} onMarkAllRead={handleMarkAllAlertsRead} />
+      </div>
 
       <RecentTransactions transactions={transactions} />
 

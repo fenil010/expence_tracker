@@ -17,6 +17,7 @@ import validate from '../middleware/validate.js';
 import { body, query as queryValidator, param } from 'express-validator';
 
 import { escapeRegex } from '../utils/sanitize.js';
+import { checkBudgetAlerts } from '../utils/budgetAlerts.js';
 
 const router = express.Router();
 
@@ -38,6 +39,7 @@ router.get('/', [
   queryValidator('sortBy').optional().isIn(['date', 'amount', 'createdAt']),
   queryValidator('sortOrder').optional().isIn(['asc', 'desc']),
   queryValidator('search').optional().isString().trim().isLength({ max: 200 }),
+  queryValidator('tags').optional().isString().trim().isLength({ max: 200 }),
   validate
 ], asyncHandler(async (req, res) => {
   const {
@@ -53,6 +55,7 @@ router.get('/', [
     sortBy = 'date',
     sortOrder = 'desc',
     search,
+    tags,
     status
   } = req.query;
 
@@ -99,6 +102,16 @@ router.get('/', [
   }
   if (search) {
     filter.$text = { $search: search };
+  }
+  if (tags) {
+    const tagList = tags
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean)
+      .slice(0, 10);
+    if (tagList.length > 0) {
+      filter.tags = { $all: tagList };
+    }
   }
 
   const sort = {};
@@ -330,6 +343,14 @@ router.post('/', [
     .populate('category', 'name icon color type')
     .populate('account', 'name icon color type');
 
+  if (transaction.type === 'expense') {
+    await checkBudgetAlerts({
+      userId: req.user._id,
+      categoryId: transaction.category,
+      date: transaction.date
+    });
+  }
+
   res.status(201).json({
     success: true,
     data: populated
@@ -454,6 +475,14 @@ router.put('/:id', [
   const populated = await Transaction.findById(transaction._id)
     .populate('category', 'name icon color type')
     .populate('account', 'name icon color type');
+
+  if (transaction.type === 'expense' && (req.body.amount || req.body.category || req.body.type || req.body.date)) {
+    await checkBudgetAlerts({
+      userId: req.user._id,
+      categoryId: transaction.category,
+      date: transaction.date
+    });
+  }
 
   res.json({ success: true, data: populated });
 }));

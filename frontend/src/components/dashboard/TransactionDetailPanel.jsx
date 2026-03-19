@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, DollarSign } from 'lucide-react';
-import { Card } from '../ui';
+import { Card, Badge } from '../ui';
 import { formatCurrency } from '../../utils/currencies';
 
 function TransactionItem({ transaction }) {
@@ -30,6 +30,15 @@ function TransactionItem({ transaction }) {
                 {formattedDate}
               </p>
             </div>
+            {Array.isArray(transaction.tags) && transaction.tags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1 mt-2">
+                {transaction.tags.map((tag) => (
+                  <Badge key={tag} size="sm" className="bg-sand/60 dark:bg-zinc-800 text-drift dark:text-zinc-400">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
           <div className="ml-3 shrink-0">
             <p className={`text-sm font-semibold tabular-nums ${transaction.type === 'income'

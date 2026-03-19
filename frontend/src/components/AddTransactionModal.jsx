@@ -12,6 +12,7 @@ const defaultForm = {
   date: new Date().toISOString().split('T')[0],
   account: '',
   currency: '',
+  tags: '',
 };
 
 export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
@@ -49,6 +50,12 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
 
     setLoading(true);
     try {
+      const tags = form.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+        .slice(0, 10);
+
       const payload = {
         type: form.type,
         amount: parseFloat(form.amount),
@@ -56,6 +63,7 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
         category: form.category,
         date: form.date,
         currency: form.currency,
+        tags: tags.length > 0 ? tags : undefined,
       };
 
       // Only include account if it's not empty
@@ -152,6 +160,14 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }) {
           type="date"
           value={form.date}
           onChange={(e) => handleChange('date', e.target.value)}
+        />
+
+        {/* Tags */}
+        <Input
+          label="Tags"
+          placeholder="e.g. groceries, lunch"
+          value={form.tags}
+          onChange={(e) => handleChange('tags', e.target.value)}
         />
 
         {/* Account */}

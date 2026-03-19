@@ -220,10 +220,18 @@ export const goalApi = {
 
 export const reportApi = {
   getDashboard: () => api.get('/reports/dashboard'),
+  getInsights: () => api.get('/reports/insights'),
   getMonthly: (params) => api.get('/reports/monthly', params),
   getYearly: (params) => api.get('/reports/yearly', params),
   getTrends: (params) => api.get('/reports/trends', params),
   exportCsv: (params) => api.get('/reports/export/csv', params),
+};
+
+export const notificationApi = {
+  getAll: (params) => api.get('/notifications', params),
+  markRead: (id) => api.patch(`/notifications/${id}/read`),
+  markAllRead: () => api.patch('/notifications/read-all'),
+  delete: (id) => api.delete(`/notifications/${id}`),
 };
 
 export const accountApi = {

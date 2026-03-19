@@ -21,6 +21,121 @@ const router = express.Router();
 router.use(protect);
 
 /**
+ * @route   GET /api/reports/insights
+ * @desc    Heuristic insights (AI-style) for spending
+ * @access  Private
+ */
+router.get('/insights', asyncHandler(async (req, res) => {
+  const userId = new mongoose.Types.ObjectId(req.user._id);
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+  const [
+    categoryBreakdown,
+    currentStats,
+    lastStats,
+    topExpense,
+    topMerchant,
+    monthlyBudget
+  ] = await Promise.all([
+    Transaction.getCategoryTotals(userId, startOfMonth, endOfMonth),
+    Transaction.aggregate([
+      { $match: { user: userId, date: { $gte: startOfMonth, $lte: endOfMonth }, type: 'expense', isTemplate: { $ne: true }, status: { $ne: 'cancelled' } } },
+      { $group: { _id: null, total: { $sum: '$amountInBaseCurrency' }, count: { $sum: 1 } } }
+    ]),
+    Transaction.aggregate([
+      { $match: { user: userId, date: { $gte: startOfLastMonth, $lte: endOfLastMonth }, type: 'expense', isTemplate: { $ne: true }, status: { $ne: 'cancelled' } } },
+      { $group: { _id: null, total: { $sum: '$amountInBaseCurrency' }, count: { $sum: 1 } } }
+    ]),
+    Transaction.find({ user: userId, type: 'expense', date: { $gte: startOfMonth, $lte: endOfMonth }, status: { $ne: 'cancelled' }, isTemplate: { $ne: true } })
+      .sort({ amountInBaseCurrency: -1 })
+      .limit(1)
+      .lean(),
+    Transaction.aggregate([
+      { $match: { user: userId, date: { $gte: startOfMonth, $lte: endOfMonth }, type: 'expense', merchant: { $ne: '' }, isTemplate: { $ne: true }, status: { $ne: 'cancelled' } } },
+      { $group: { _id: '$merchant', total: { $sum: '$amountInBaseCurrency' }, count: { $sum: 1 } } },
+      { $sort: { total: -1 } },
+      { $limit: 1 }
+    ]),
+    Budget.getCurrentMonthlyBudget(userId)
+  ]);
+
+  const currentExpense = currentStats[0]?.total || 0;
+  const lastExpense = lastStats[0]?.total || 0;
+  const changePct = lastExpense > 0 ? Math.round(((currentExpense - lastExpense) / lastExpense) * 100) : 0;
+
+  const insights = [];
+
+  const topCategory = categoryBreakdown?.[0];
+  if (topCategory) {
+    insights.push({
+      id: 'top-category',
+      type: 'category',
+      title: `Top category: ${topCategory.categoryName}`,
+      description: `This category accounts for ${Math.round((topCategory.total / (currentExpense || 1)) * 100)}% of your monthly spend.`,
+      severity: 'info',
+      data: topCategory
+    });
+  }
+
+  if (currentExpense > 0) {
+    const direction = changePct >= 0 ? 'up' : 'down';
+    const absChange = Math.abs(changePct);
+    const severity = absChange >= 25 ? 'warning' : 'info';
+    insights.push({
+      id: 'month-change',
+      type: 'trend',
+      title: `Spending is ${direction} ${absChange}%`,
+      description: `Compared to last month, your expenses are ${direction} ${absChange}%.`,
+      severity,
+      data: { changePct }
+    });
+  }
+
+  if (topExpense?.[0]) {
+    insights.push({
+      id: 'largest-expense',
+      type: 'transaction',
+      title: 'Largest expense this month',
+      description: `${topExpense[0].description || 'Expense'}: ${topExpense[0].amountInBaseCurrency}`,
+      severity: 'info',
+      data: topExpense[0]
+    });
+  }
+
+  if (topMerchant?.[0]) {
+    insights.push({
+      id: 'top-merchant',
+      type: 'merchant',
+      title: `Top merchant: ${topMerchant[0]._id}`,
+      description: `You spent ${topMerchant[0].total} across ${topMerchant[0].count} transactions.`,
+      severity: 'info',
+      data: topMerchant[0]
+    });
+  }
+
+  if (monthlyBudget) {
+    const spent = await monthlyBudget.calculateSpent();
+    const usage = monthlyBudget.amount > 0 ? Math.round((spent / monthlyBudget.amount) * 100) : 0;
+    if (usage >= 80) {
+      insights.push({
+        id: 'budget-risk',
+        type: 'budget',
+        title: 'Budget nearing limit',
+        description: `You have used ${usage}% of your monthly budget.`,
+        severity: usage >= 100 ? 'critical' : 'warning',
+        data: { usage }
+      });
+    }
+  }
+
+  res.json({ success: true, data: { insights } });
+}));
+
+/**
  * @route   GET /api/reports/dashboard
  * @desc    Dashboard summary using aggregation — NOT loading all transactions
  * @access  Private

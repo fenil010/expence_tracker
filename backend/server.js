@@ -27,6 +27,7 @@ import goalRoutes from './routes/goals.js';
 import userRoutes from './routes/users.js';
 import reportRoutes from './routes/reports.js';
 import accountRoutes from './routes/accounts.js';
+import notificationRoutes from './routes/notifications.js';
 
 // Import error handling middleware
 import errorHandler from './middleware/errorHandler.js';
@@ -148,6 +149,7 @@ app.use('/api/goals', goalRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/accounts', accountRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ========================================================================
 // STATIC FILE SERVING (for uploaded receipts)

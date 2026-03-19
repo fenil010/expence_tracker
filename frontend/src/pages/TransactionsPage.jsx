@@ -19,7 +19,7 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [filters, setFilters] = useState({ type: '', category: '', search: '', startDate: '', endDate: '' });
+  const [filters, setFilters] = useState({ type: '', category: '', search: '', tags: '', startDate: '', endDate: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -40,6 +40,8 @@ export default function TransactionsPage() {
       const params = { sort: '-date', limit: LIMIT, skip: (pageNum - 1) * LIMIT };
       if (filters.type) params.type = filters.type;
       if (filters.category) params.category = filters.category;
+      if (filters.search) params.search = filters.search;
+      if (filters.tags) params.tags = filters.tags;
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
 
@@ -94,7 +96,7 @@ export default function TransactionsPage() {
       setHasMore(true);
       fetchTransactions(1, false);
     }
-  }, [filters.type, filters.category, filters.startDate, filters.endDate, filters.search]);
+  }, [filters.type, filters.category, filters.startDate, filters.endDate, filters.search, filters.tags]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -120,7 +122,14 @@ export default function TransactionsPage() {
       const s = filters.search.toLowerCase();
       const desc = (tx.description || '').toLowerCase();
       const cat = (tx.category?.name || tx.category || '').toLowerCase();
-      if (!desc.includes(s) && !cat.includes(s)) return false;
+      const merchant = (tx.merchant || '').toLowerCase();
+      if (!desc.includes(s) && !cat.includes(s) && !merchant.includes(s)) return false;
+    }
+    if (filters.tags) {
+      const tagList = filters.tags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+      const txTags = (tx.tags || []).map((t) => t.toLowerCase());
+      const matchesAll = tagList.every((tag) => txTags.includes(tag));
+      if (!matchesAll) return false;
     }
     return true;
   });
@@ -147,10 +156,10 @@ export default function TransactionsPage() {
     return top;
   }, [filtered]);
 
-  const hasActiveFilters = filters.type || filters.category || filters.search || filters.startDate || filters.endDate;
+  const hasActiveFilters = filters.type || filters.category || filters.search || filters.tags || filters.startDate || filters.endDate;
 
   const clearFilters = () => {
-    setFilters({ type: '', category: '', search: '', startDate: '', endDate: '' });
+    setFilters({ type: '', category: '', search: '', tags: '', startDate: '', endDate: '' });
   };
 
   return (
@@ -282,6 +291,14 @@ export default function TransactionsPage() {
                   type="date"
                   value={filters.endDate}
                   onChange={(e) => setFilters((p) => ({ ...p, endDate: e.target.value }))}
+                />
+              </div>
+              <div className="min-w-48 flex-1">
+                <Input
+                  label="Tags"
+                  placeholder="e.g. rent, utilities"
+                  value={filters.tags}
+                  onChange={(e) => setFilters((p) => ({ ...p, tags: e.target.value }))}
                 />
               </div>
               {hasActiveFilters && (
