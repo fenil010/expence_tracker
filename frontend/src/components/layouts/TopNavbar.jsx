@@ -42,7 +42,7 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-parchment/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-stone/15 dark:border-zinc-800 transition-colors duration-300">
+    <header className="sticky top-0 z-30 bg-parchment/70 dark:bg-zinc-950/70 backdrop-blur-xl border-b border-white/40 dark:border-zinc-800/80 transition-colors duration-300">
       <div className="flex items-center justify-between h-14 px-4 sm:px-6 lg:px-10">
         {/* Breadcrumb-style page indicator */}
         <div className="flex items-center gap-3">
@@ -75,7 +75,7 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={openCommandPalette}
-            className="flex items-center h-[38px] px-3 gap-2 rounded-xl text-drift dark:text-zinc-400 bg-sand/40 dark:bg-zinc-800/60 border border-stone/20 dark:border-zinc-700 hover:bg-sand/60 dark:hover:bg-zinc-800 transition-colors duration-200 cursor-pointer"
+            className="flex items-center h-9.5 px-3 gap-2 rounded-xl text-drift dark:text-zinc-400 bg-sand/40 dark:bg-zinc-800/60 border border-stone/20 dark:border-zinc-700 hover:bg-sand/60 dark:hover:bg-zinc-800 transition-colors duration-200 cursor-pointer"
           >
             <Search className="w-3.5 h-3.5" strokeWidth={1.8} />
             <span className="text-xs hidden sm:inline">Search...</span>
@@ -88,9 +88,9 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="w-[38px] h-[38px] flex items-center justify-center rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand/50 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer relative"
+            className="w-9.5 h-9.5 flex items-center justify-center rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand/50 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer relative"
           >
-            <Bell className="w-[18px] h-[18px]" strokeWidth={1.8} />
+            <Bell className="w-4.5 h-4.5" strokeWidth={1.8} />
             <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-obsidian dark:bg-white rounded-full" />
           </motion.button>
 
@@ -99,10 +99,10 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggleTheme}
-            className="w-[38px] h-[38px] flex items-center justify-center rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand/50 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer"
+            className="w-9.5 h-9.5 flex items-center justify-center rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand/50 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer"
             title={`Current theme: ${mode}`}
           >
-            <ThemeIcon className="w-[18px] h-[18px]" strokeWidth={1.8} />
+            <ThemeIcon className="w-4.5 h-4.5" strokeWidth={1.8} />
           </motion.button>
 
           {/* Add Transaction */}
@@ -111,10 +111,10 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
             whileTap={{ scale: 0.97 }}
             onClick={onAddTransaction}
             className="
-              flex items-center justify-center h-[38px] px-4 gap-2 whitespace-nowrap
-              bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent)]/90
-              text-[var(--color-accent-fg)] text-sm font-medium
-              rounded-xl hover:shadow-lg hover:shadow-[var(--color-accent)]/20
+              flex items-center justify-center h-9.5 px-4 gap-2 whitespace-nowrap
+              bg-linear-to-br from-(--color-accent) to-(--color-accent)/90
+              text-(--color-accent-fg) text-sm font-medium
+              rounded-xl hover:shadow-lg hover:shadow-(--color-accent)/20
               transition-all duration-300 cursor-pointer
             "
           >
@@ -128,7 +128,7 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center justify-center h-[38px] gap-2 pl-2 pr-1.5 rounded-xl hover:bg-sand/50 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer"
+              className="flex items-center justify-center h-9.5 gap-2 pl-2 pr-1.5 rounded-xl hover:bg-sand/50 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer"
             >
               <div className="w-7 h-7 rounded-lg bg-sand dark:bg-zinc-800 flex items-center justify-center">
                 <span className="text-xs font-semibold text-obsidian dark:text-white">

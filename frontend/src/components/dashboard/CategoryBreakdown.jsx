@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { Card } from '../ui';
+import { Card, Badge } from '../ui';
 import TransactionDetailPanel from './TransactionDetailPanel';
 import { transactionApi } from '../../services/api';
 import { toast } from '../ui/Toast';
@@ -26,7 +26,7 @@ const CustomTooltip = ({ active, payload }) => {
   );
 };
 
-export default function CategoryBreakdown({ data = [], className = '' }) {
+export default function CategoryBreakdown({ data = [], className = '', highlightName = null }) {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categoryTransactions, setCategoryTransactions] = useState([]);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -120,7 +120,7 @@ export default function CategoryBreakdown({ data = [], className = '' }) {
           {!hasData && (
             <div className="absolute inset-0 flex items-center justify-center z-10">
               <div className="text-center max-w-xs">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sand/60 to-stone/30 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-sand/60 to-stone/30 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center mx-auto mb-4 shadow-sm">
                   <svg className="w-7 h-7 text-char dark:text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
@@ -130,7 +130,7 @@ export default function CategoryBreakdown({ data = [], className = '' }) {
                 <p className="text-sm text-drift dark:text-zinc-400 mb-4">Add transactions with categories to see your spending breakdown</p>
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('openAddTransaction'))}
-                  className="inline-flex items-center gap-2 px-4 py-2 whitespace-nowrap bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent)]/90 text-[var(--color-accent-fg)] text-sm font-medium rounded-lg hover:shadow-lg hover:shadow-[var(--color-accent)]/20 transition-all duration-300"
+                  className="inline-flex items-center gap-2 px-4 py-2 whitespace-nowrap bg-linear-to-br from-(--color-accent) to-(--color-accent)/90 text-(--color-accent-fg) text-sm font-medium rounded-lg hover:shadow-lg hover:shadow-(--color-accent)/20 transition-all duration-300"
                 >
                   <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -176,7 +176,9 @@ export default function CategoryBreakdown({ data = [], className = '' }) {
 
         {/* Legend */}
         <div className="mt-auto pt-4 space-y-2.5 border-t border-stone/15 dark:border-zinc-800">
-          {data.slice(0, 5).map((item, i) => (
+          {data.slice(0, 5).map((item, i) => {
+            const isHighlight = highlightName && item.name === highlightName;
+            return (
             <motion.button
               key={item.name}
               initial={{ opacity: 0, x: -8 }}
@@ -189,10 +191,11 @@ export default function CategoryBreakdown({ data = [], className = '' }) {
                   handleCategoryClick(item);
                 }
               }}
-              className="w-full flex items-center justify-between p-2 -mx-2 rounded-lg
+              className={`w-full flex items-center justify-between p-2 -mx-2 rounded-lg
+                         ${isHighlight ? 'bg-(--color-accent)/8 dark:bg-(--color-accent)/15' : ''}
                          hover:bg-sand/50 dark:hover:bg-zinc-800/50
                          focus:outline-none focus:ring-2 focus:ring-obsidian/20 dark:focus:ring-zinc-700
-                         transition-colors duration-200 cursor-pointer"
+                         transition-colors duration-200 cursor-pointer`}
               tabIndex={0}
               aria-label={`View ${item.name} transactions, ${formatCurrency(Number(item.value), currency)} spent`}
             >
@@ -203,12 +206,18 @@ export default function CategoryBreakdown({ data = [], className = '' }) {
                   aria-hidden="true"
                 />
                 <span className="text-sm text-char dark:text-zinc-300">{item.name}</span>
+                {isHighlight && (
+                  <Badge size="sm" className="bg-(--color-accent)/15 text-(--color-accent)">
+                    Top
+                  </Badge>
+                )}
               </div>
               <span className="text-sm font-medium text-obsidian dark:text-white tabular-nums">
                 {formatCurrency(Number(item.value), currency)}
               </span>
             </motion.button>
-          ))}
+          );
+          })}
         </div>
       </Card>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw, Plus } from 'lucide-react';
-import { PageWrapper, Card, Button, CardSkeleton, ChartSkeleton } from '../components/ui';
+import { PageWrapper, Card, Button, Badge, CardSkeleton, ChartSkeleton } from '../components/ui';
 import SpendingMeter from '../components/ui/SpendingMeter';
 import BalanceCards from '../components/dashboard/BalanceCards';
 import SpendingChart from '../components/dashboard/SpendingChart';
@@ -10,6 +10,7 @@ import RecentTransactions from '../components/dashboard/RecentTransactions';
 import QuickActionButton from '../components/dashboard/QuickActionButton';
 import { reportApi, transactionApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { formatCurrency, getDefaultCurrency } from '../utils/currencies';
 
 function getGreeting(name) {
   const hour = new Date().getHours();
@@ -89,6 +90,7 @@ export default function Dashboard() {
   const balance = dashboard?.totalBalance || 0;
   const income = dashboard?.currentMonth?.income || 0;
   const expenses = dashboard?.currentMonth?.expenses || 0;
+  const currency = getDefaultCurrency();
   const budgetData = dashboard?.budget;
   const monthlyBudget = budgetData?.amount || income;
 
@@ -102,6 +104,12 @@ export default function Dashboard() {
     value: c.total || c.value || 0,
     id: c._id || null,
   }));
+
+  const topCategory = categoryData.reduce((top, current) => {
+    if (!top || current.value > top.value) return current;
+    return top;
+  }, null);
+  const topShare = expenses > 0 && topCategory ? Math.round((topCategory.value / expenses) * 100) : 0;
 
   const hasData = transactions.length > 0 || income > 0 || expenses > 0;
 
@@ -147,8 +155,37 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         <SpendingChart data={monthlyData} className="lg:col-span-3" />
-        <CategoryBreakdown data={categoryData} className="lg:col-span-2" />
+        <CategoryBreakdown
+          data={categoryData}
+          className="lg:col-span-2"
+          highlightName={topCategory?.name}
+        />
       </div>
+
+      {topCategory && (
+        <Card variant="glass" className="relative overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-drift/80 dark:text-zinc-500">
+                Top Category Highlight
+              </p>
+              <h3 className="text-xl font-semibold text-obsidian dark:text-white mt-2">
+                {topCategory.name}
+              </h3>
+              <p className="text-sm text-drift dark:text-zinc-400 mt-1">
+                {formatCurrency(topCategory.value, currency)} spent this month
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge className="bg-(--color-accent)/15 text-(--color-accent)">
+                {topShare}% of expenses
+              </Badge>
+              <span className="text-xs text-drift dark:text-zinc-500">Based on category totals</span>
+            </div>
+          </div>
+          <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-(--color-accent)/15 blur-3xl" />
+        </Card>
+      )}
 
       <RecentTransactions transactions={transactions} />
 

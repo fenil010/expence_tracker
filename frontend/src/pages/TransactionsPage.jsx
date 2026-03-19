@@ -132,6 +132,21 @@ export default function TransactionsPage() {
     return { income, expense, net: income - expense };
   }, [filtered]);
 
+  const topCategory = useMemo(() => {
+    const totals = new Map();
+    filtered.filter((tx) => tx.type === 'expense').forEach((tx) => {
+      const name = tx.category?.name || tx.category || 'Uncategorized';
+      totals.set(name, (totals.get(name) || 0) + (tx.amount || 0));
+    });
+
+    let top = null;
+    totals.forEach((total, name) => {
+      if (!top || total > top.total) top = { name, total };
+    });
+
+    return top;
+  }, [filtered]);
+
   const hasActiveFilters = filters.type || filters.category || filters.search || filters.startDate || filters.endDate;
 
   const clearFilters = () => {
@@ -151,7 +166,7 @@ export default function TransactionsPage() {
           >
             <span className="hidden sm:inline">Filter</span>
             {hasActiveFilters && (
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] ml-1" />
+              <span className="w-1.5 h-1.5 rounded-full bg-(--color-accent) ml-1" />
             )}
           </Button>
           <Button icon={Plus} onClick={() => setShowModal(true)}>
@@ -168,7 +183,7 @@ export default function TransactionsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <Card className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-sand/30 to-linen dark:from-zinc-800/40 dark:to-zinc-900" padding="p-4 px-6">
+          <Card variant="glass" className="flex flex-wrap items-center justify-between gap-4" padding="p-4 px-6">
             <div className="flex items-center gap-6 text-sm">
               <div>
                 <span className="text-drift dark:text-zinc-500 text-xs">Income</span>
@@ -189,9 +204,24 @@ export default function TransactionsPage() {
                 </p>
               </div>
             </div>
-            <span className="text-xs text-drift dark:text-zinc-500">
-              {filtered.length} transaction{filtered.length !== 1 ? 's' : ''}
-            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              {topCategory && (
+                <div className="flex items-center gap-2 text-xs">
+                  <Badge size="sm" className="bg-(--color-accent)/15 text-(--color-accent)">
+                    Top Category
+                  </Badge>
+                  <span className="text-char dark:text-zinc-200 font-medium">
+                    {topCategory.name}
+                  </span>
+                  <span className="text-drift dark:text-zinc-500">
+                    {formatCurrency(topCategory.total, currency)}
+                  </span>
+                </div>
+              )}
+              <span className="text-xs text-drift dark:text-zinc-500">
+                {filtered.length} transaction{filtered.length !== 1 ? 's' : ''}
+              </span>
+            </div>
           </Card>
         </motion.div>
       )}
@@ -207,7 +237,7 @@ export default function TransactionsPage() {
             className="overflow-hidden"
           >
             <Card className="flex flex-wrap items-end gap-4">
-              <div className="flex-1 min-w-[180px]">
+              <div className="flex-1 min-w-45">
                 <Input
                   icon={Search}
                   placeholder="Search transactions..."

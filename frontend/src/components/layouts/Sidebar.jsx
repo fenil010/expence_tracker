@@ -53,7 +53,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
       initial="hidden"
       animate="show"
       variants={sidebarVariants}
-      className="fixed left-0 top-0 bottom-0 w-64 bg-linen dark:bg-zinc-900 border-r border-stone/20 dark:border-zinc-800 flex flex-col z-40 transition-colors duration-300"
+      className="fixed left-0 top-0 bottom-0 w-64 bg-linen/80 dark:bg-zinc-900/70 backdrop-blur-xl border-r border-white/30 dark:border-zinc-800/80 flex flex-col z-40 transition-colors duration-300"
     >
       {/* Logo + mobile close */}
       <div className="px-6 py-7 flex items-center justify-between">
@@ -94,17 +94,17 @@ export default function Sidebar({ isOpen = false, onClose }) {
                     rounded-xl text-sm font-medium
                     transition-colors duration-300 ease-smooth
                     ${isActive
-                      ? 'bg-[var(--color-accent)]/10 dark:bg-[var(--color-accent)]/20 text-[var(--color-accent)] shadow-soft dark:shadow-none'
+                      ? 'bg-(--color-accent)/10 dark:bg-(--color-accent)/20 text-(--color-accent) shadow-soft dark:shadow-none'
                       : 'text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand/40 dark:hover:bg-zinc-800/60'
                     }
                   `}
                 >
-                  <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.8} />
+                  <Icon className="w-4.5 h-4.5 shrink-0" strokeWidth={1.8} />
                   <span>{label}</span>
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active"
-                      className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-5 bg-[var(--color-accent)] rounded-full"
+                      className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-5 bg-(--color-accent) rounded-full"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     />
                   )}
@@ -148,7 +148,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
             hover:bg-sand/40 dark:hover:bg-zinc-800/60 hover:text-char dark:hover:text-zinc-200
             transition-colors duration-300 cursor-pointer"
         >
-          <LogOut className="w-[18px] h-[18px]" strokeWidth={1.8} />
+          <LogOut className="w-4.5 h-4.5" strokeWidth={1.8} />
           <span>Log out</span>
         </motion.button>
       </motion.div>

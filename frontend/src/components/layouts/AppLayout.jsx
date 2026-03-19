@@ -33,7 +33,7 @@ export default function AppLayout() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-parchment dark:bg-zinc-950 transition-colors duration-300">
+    <div className="min-h-screen app-shell transition-colors duration-300">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="lg:pl-64 min-h-screen flex flex-col">
@@ -43,7 +43,7 @@ export default function AppLayout() {
         />
 
         <main className="flex-1 px-4 sm:px-6 lg:px-10 py-6">
-          <div className="max-w-[1400px] mx-auto">
+          <div className="max-w-350 mx-auto">
             <AnimatePresence mode="wait">
               <Outlet />
             </AnimatePresence>

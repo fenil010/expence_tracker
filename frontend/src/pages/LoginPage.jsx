@@ -281,7 +281,7 @@ export default function LoginPage() {
               disabled={loading}
               className="
                 w-full flex items-center justify-center gap-2
-                py-3 bg-[var(--color-accent)] text-[var(--color-accent-fg)]
+                py-3 bg-(--color-accent) text-(--color-accent-fg)
                 text-sm font-medium rounded-xl
                 hover:opacity-90 transition-all duration-300
                 disabled:opacity-40 cursor-pointer
@@ -312,7 +312,7 @@ export default function LoginPage() {
 
           {/* Google Button Container */}
           <div className="w-full flex justify-center mb-6">
-            <div ref={googleButtonRef} className="w-full max-w-[280px]"></div>
+            <div ref={googleButtonRef} className="w-full max-w-70"></div>
           </div>
 
           {/* Toggle */}
@@ -324,7 +324,7 @@ export default function LoginPage() {
                 setError('');
                 setShowPassword(false);
               }}
-              className="text-[var(--color-accent)] font-medium hover:underline underline-offset-4 cursor-pointer transition-all duration-200"
+              className="text-(--color-accent) font-medium hover:underline underline-offset-4 cursor-pointer transition-all duration-200"
             >
               {isLogin ? 'Sign up' : 'Sign in'}
             </button>
