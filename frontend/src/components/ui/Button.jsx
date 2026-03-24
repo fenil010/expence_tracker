@@ -3,16 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { buttonVariants, durations, easings } from '../../utils/animations';
 
 const variants = {
-  primary: 'bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent)]/90 text-[var(--color-accent-fg)] hover:shadow-lg hover:shadow-[var(--color-accent)]/20',
-  secondary: 'bg-linen dark:bg-zinc-800 text-char dark:text-zinc-200 border border-stone dark:border-zinc-700 hover:bg-sand dark:hover:bg-zinc-700',
-  ghost: 'bg-transparent text-char dark:text-zinc-300 hover:bg-sand dark:hover:bg-zinc-800',
-  danger: 'bg-parchment dark:bg-red-950/30 text-red-800/70 dark:text-red-400 border border-red-200/50 dark:border-red-800/40 hover:bg-red-50/50 dark:hover:bg-red-950/50',
+  primary: 'bg-gradient-to-br from-accent via-accent to-accent-secondary text-accent-fg shadow-lg shadow-accent/30 hover:shadow-xl hover:shadow-accent/40 border border-accent/20',
+  secondary: 'glass-card text-char dark:text-zinc-100 hover:bg-white/80 dark:hover:bg-indigo-900/50 shadow-md',
+  ghost: 'bg-transparent text-char dark:text-zinc-200 hover:glass-subtle',
+  danger: 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 border border-red-400/20',
 };
 
 const sizes = {
   sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-6 py-2.5 text-base',
+  md: 'px-4 py-2.5 text-sm',
+  lg: 'px-6 py-3 text-base',
 };
 
 const Button = forwardRef(({
@@ -24,6 +24,7 @@ const Button = forwardRef(({
   className = '',
   disabled = false,
   loading = false,
+  success = false,
   ...props
 }, ref) => {
   const [ripples, setRipples] = useState([]);
@@ -68,7 +69,7 @@ const Button = forwardRef(({
       className={`
         relative overflow-hidden
         inline-flex items-center justify-center gap-2
-        font-medium rounded-xl
+        font-semibold rounded-xl
         transition-all duration-300 ease-smooth
         cursor-pointer
         disabled:opacity-40 disabled:cursor-not-allowed
@@ -110,6 +111,17 @@ const Button = forwardRef(({
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           />
+        ) : success ? (
+          <motion.svg
+            className="w-4 h-4 shrink-0"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          >
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </motion.svg>
         ) : Icon ? (
           <motion.span
             className="shrink-0"

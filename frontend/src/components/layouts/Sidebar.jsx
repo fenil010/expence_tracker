@@ -4,8 +4,7 @@ import {
   LayoutDashboard,
   ArrowLeftRight,
   Wallet,
-  Target,
-  BarChart3,
+  Sparkles,
   Settings,
   LogOut,
   CreditCard,
@@ -18,8 +17,7 @@ const navItems = [
   { to: '/transactions', icon: ArrowLeftRight, label: 'Transactions' },
   { to: '/accounts', icon: CreditCard, label: 'Accounts' },
   { to: '/budgets', icon: Wallet, label: 'Budgets' },
-  { to: '/goals', icon: Target, label: 'Goals' },
-  { to: '/reports', icon: BarChart3, label: 'Reports' },
+  { to: '/reports', icon: Sparkles, label: 'AI Insights' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
@@ -53,7 +51,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
       initial="hidden"
       animate="show"
       variants={sidebarVariants}
-      className="fixed left-0 top-0 bottom-0 w-64 bg-linen/80 dark:bg-zinc-900/70 backdrop-blur-xl border-r border-white/30 dark:border-zinc-800/80 flex flex-col z-40 transition-colors duration-300"
+      className="fixed left-0 top-0 bottom-0 w-64 bg-white/46 dark:bg-zinc-950/56 backdrop-blur-2xl border-r border-white/55 dark:border-indigo-900/60 flex flex-col z-40 transition-colors duration-300"
     >
       {/* Logo + mobile close */}
       <div className="px-6 py-7 flex items-center justify-between">
@@ -63,7 +61,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
           transition={{ duration: 0.5, delay: 0.15 }}
           className="text-xl font-semibold text-obsidian dark:text-white tracking-tight"
         >
-          Ledger<span className="text-drift dark:text-zinc-500">.</span>
+          FinTrack<span className="text-cyan-300">AI</span>
         </motion.h1>
         <button
           onClick={onClose}
@@ -94,7 +92,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
                     rounded-xl text-sm font-medium
                     transition-colors duration-300 ease-smooth
                     ${isActive
-                      ? 'bg-(--color-accent)/10 dark:bg-(--color-accent)/20 text-(--color-accent) shadow-soft dark:shadow-none'
+                      ? 'bg-accent/10 dark:bg-accent/20 text-accent shadow-soft dark:shadow-none'
                       : 'text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand/40 dark:hover:bg-zinc-800/60'
                     }
                   `}
@@ -104,7 +102,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active"
-                      className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-5 bg-(--color-accent) rounded-full"
+                      className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-5 bg-accent rounded-full"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     />
                   )}

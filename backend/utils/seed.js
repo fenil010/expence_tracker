@@ -168,7 +168,14 @@ const seed = async () => {
     ];
 
     const createdTransactions = await Transaction.insertMany(
-      transactions.map(t => ({ ...t, user: user._id, status: 'completed' }))
+      transactions.map((t) => ({
+        ...t,
+        user: user._id,
+        status: 'completed',
+        currency: t.currency || 'USD',
+        exchangeRate: 1,
+        amountInBaseCurrency: t.amount,
+      }))
     );
     console.log(`   Created ${createdTransactions.length} transactions`);
 
@@ -363,17 +370,216 @@ const seed = async () => {
     ]);
 
     // ========================================================================
+    // 8. CREATE SECOND DUMMY USER WITH 2 YEARS OF DATA (GRAPH FRIENDLY)
+    // ========================================================================
+    console.log('🧑‍💼 Creating second demo user with 24-month history...');
+    const powerUser = await User.create({
+      name: 'Alex Johnson',
+      email: 'alex.demo@expensetracker.com',
+      password: 'demo1234',
+      currency: 'USD',
+      isVerified: true,
+      role: 'user'
+    });
+
+    const powerAccounts = await Account.insertMany([
+      {
+        user: powerUser._id,
+        name: 'Primary Bank',
+        type: 'bank',
+        balance: 18400,
+        icon: '🏦',
+        color: '#007AFF',
+        isDefault: true
+      },
+      {
+        user: powerUser._id,
+        name: 'Wallet',
+        type: 'cash',
+        balance: 620,
+        icon: '💵',
+        color: '#34C759'
+      },
+      {
+        user: powerUser._id,
+        name: 'Travel Card',
+        type: 'credit_card',
+        balance: -420,
+        creditLimit: 8000,
+        icon: '💳',
+        color: '#FF3B30'
+      }
+    ]);
+
+    const powerBank = powerAccounts[0];
+    const powerWallet = powerAccounts[1];
+    const powerCard = powerAccounts[2];
+
+    const powerCategories = await Category.createDefaultsForUser(powerUser._id);
+    const powerCatMap = {};
+    powerCategories.forEach(c => { powerCatMap[c.name] = c._id; });
+
+    const twoYearTransactions = [];
+    for (let monthOffset = 23; monthOffset >= 0; monthOffset -= 1) {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - monthOffset, 1);
+      const month = monthDate.getMonth();
+      const year = monthDate.getFullYear();
+      const index = 23 - monthOffset;
+      const seasonalFactor = 1 + Math.sin(index / 3) * 0.08;
+
+      const salary = Math.round((6200 + (index % 4) * 110) * seasonalFactor);
+      const groceries = Math.round((360 + (index % 5) * 22) * seasonalFactor);
+      const transport = Math.round((140 + (index % 4) * 16) * seasonalFactor);
+      const utilities = Math.round((170 + (index % 3) * 18) * seasonalFactor);
+      const entertainment = Math.round((120 + (index % 6) * 15) * seasonalFactor);
+      const shopping = Math.round((180 + (index % 7) * 24) * seasonalFactor);
+
+      twoYearTransactions.push(
+        {
+          user: powerUser._id,
+          type: 'income',
+          amount: salary,
+          category: powerCatMap['Salary'],
+          account: powerBank._id,
+          description: 'Monthly salary',
+          date: new Date(year, month, 5),
+          merchant: 'Northstar Labs',
+          paymentMethod: 'bank_transfer',
+          status: 'completed'
+        },
+        {
+          user: powerUser._id,
+          type: 'expense',
+          amount: 1550,
+          category: powerCatMap['Bills & Utilities'],
+          account: powerBank._id,
+          description: 'Rent payment',
+          date: new Date(year, month, 1),
+          merchant: 'Skyline Properties',
+          paymentMethod: 'bank_transfer',
+          status: 'completed'
+        },
+        {
+          user: powerUser._id,
+          type: 'expense',
+          amount: groceries,
+          category: powerCatMap['Food & Dining'],
+          account: powerCard._id,
+          description: 'Grocery shopping',
+          date: new Date(year, month, 7),
+          merchant: 'Whole Foods',
+          paymentMethod: 'credit_card',
+          status: 'completed'
+        },
+        {
+          user: powerUser._id,
+          type: 'expense',
+          amount: transport,
+          category: powerCatMap['Transportation'],
+          account: powerCard._id,
+          description: 'Fuel and rideshare',
+          date: new Date(year, month, 12),
+          merchant: 'Uber',
+          paymentMethod: 'credit_card',
+          status: 'completed'
+        },
+        {
+          user: powerUser._id,
+          type: 'expense',
+          amount: utilities,
+          category: powerCatMap['Bills & Utilities'],
+          account: powerBank._id,
+          description: 'Utilities bundle',
+          date: new Date(year, month, 16),
+          merchant: 'City Utilities',
+          paymentMethod: 'bank_transfer',
+          status: 'completed'
+        },
+        {
+          user: powerUser._id,
+          type: 'expense',
+          amount: entertainment,
+          category: powerCatMap['Entertainment'],
+          account: powerCard._id,
+          description: 'Streaming and movies',
+          date: new Date(year, month, 20),
+          merchant: 'Netflix',
+          paymentMethod: 'credit_card',
+          status: 'completed'
+        },
+        {
+          user: powerUser._id,
+          type: 'expense',
+          amount: shopping,
+          category: powerCatMap['Shopping'],
+          account: powerCard._id,
+          description: 'General shopping',
+          date: new Date(year, month, 24),
+          merchant: 'Amazon',
+          paymentMethod: 'credit_card',
+          status: 'completed'
+        },
+        {
+          user: powerUser._id,
+          type: 'expense',
+          amount: 52,
+          category: powerCatMap['Health & Medical'],
+          account: powerBank._id,
+          description: 'Gym membership',
+          date: new Date(year, month, 2),
+          merchant: 'Anytime Fitness',
+          paymentMethod: 'bank_transfer',
+          status: 'completed'
+        },
+        {
+          user: powerUser._id,
+          type: 'expense',
+          amount: 40,
+          category: powerCatMap['Personal Care'],
+          account: powerWallet._id,
+          description: 'Personal care',
+          date: new Date(year, month, 10),
+          merchant: 'Local Barber',
+          paymentMethod: 'cash',
+          status: 'completed'
+        }
+      );
+
+      if (index % 3 === 0) {
+        twoYearTransactions.push({
+          user: powerUser._id,
+          type: 'income',
+          amount: Math.round((780 + (index % 5) * 60) * seasonalFactor),
+          category: powerCatMap['Freelance'],
+          account: powerBank._id,
+          description: 'Freelance side project',
+          date: new Date(year, month, 27),
+          merchant: 'Client Studio',
+          paymentMethod: 'bank_transfer',
+          status: 'completed'
+        });
+      }
+    }
+
+    const createdPowerTransactions = await Transaction.insertMany(
+      twoYearTransactions.map((t) => ({
+        ...t,
+        currency: t.currency || 'USD',
+        exchangeRate: 1,
+        amountInBaseCurrency: t.amount,
+      }))
+    );
+
+    // ========================================================================
     // DONE
     // ========================================================================
     console.log('\n✅ Seed completed successfully!');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`   User:         ${user.email} / demo1234`);
-    console.log(`   Accounts:     ${accounts.length}`);
-    console.log(`   Categories:   ${defaultCats.length}`);
-    console.log(`   Transactions: ${createdTransactions.length}`);
-    console.log(`   Budgets:      3`);
-    console.log(`   Goals:        3`);
-    console.log(`   Recurring:    3`);
+    console.log(`   User 1:       ${user.email} / demo1234`);
+    console.log(`   User 1 Data:  ${accounts.length} accounts, ${defaultCats.length} categories, ${createdTransactions.length} transactions`);
+    console.log(`   User 1 Extras:${3} budgets, ${3} goals, ${3} recurring`);
+    console.log(`   User 2:       ${powerUser.email} / demo1234`);
+    console.log(`   User 2 Data:  ${powerAccounts.length} accounts, ${powerCategories.length} categories, ${createdPowerTransactions.length} transactions (24 months)`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
     process.exit(0);

@@ -1,13 +1,14 @@
 import { motion } from 'framer-motion';
-import { cardVariants, durations, easings } from '../../utils/animations';
+import { cardVariants, durations } from '../../utils/animations';
 
 const variants = {
-  default: 'bg-white/65 dark:bg-zinc-900/60 border border-white/45 dark:border-zinc-700/60 backdrop-blur-2xl shadow-soft',
-  elevated: 'bg-white/70 dark:bg-zinc-900/65 border border-white/50 dark:border-zinc-700/60 backdrop-blur-2xl shadow-card',
-  flat: 'bg-white/50 dark:bg-zinc-950/60 border border-white/30 dark:border-zinc-800/60 backdrop-blur-xl',
-  outlined: 'bg-white/20 dark:bg-zinc-900/20 border-2 border-white/40 dark:border-zinc-700/60 backdrop-blur-xl',
-  gradient: 'bg-linear-to-br from-white/70 via-white/50 to-white/70 dark:from-zinc-900/60 dark:via-zinc-950/60 dark:to-zinc-900/60 border border-white/50 dark:border-zinc-700/60 backdrop-blur-2xl shadow-soft',
-  glass: 'bg-white/65 dark:bg-zinc-900/60 border border-white/45 dark:border-zinc-700/60 backdrop-blur-2xl shadow-soft',
+  default: 'glass-card',
+  elevated: 'glass-elevated shadow-2xl',
+  flat: 'bg-white/50 dark:bg-zinc-900/50 border border-white/40 dark:border-zinc-700/40 backdrop-blur-xl',
+  outlined: 'bg-white/30 dark:bg-zinc-900/30 border-2 border-white/60 dark:border-indigo-700/50 backdrop-blur-xl',
+  gradient: 'bg-gradient-to-br from-white/80 via-white/60 to-white/70 dark:from-indigo-950/70 dark:via-zinc-950/70 dark:to-indigo-900/60 border border-white/70 dark:border-indigo-800/40 backdrop-blur-2xl shadow-xl',
+  glass: 'glass-card',
+  subtle: 'glass-subtle',
 };
 
 const glowColors = {
@@ -53,7 +54,7 @@ export default function Card({
       {/* Gradient overlay on hover */}
       {(hover || isInteractive) && (
         <motion.div
-          className="absolute inset-0 rounded-2xl bg-linear-to-br from-white/5 to-transparent dark:from-white/3 pointer-events-none"
+          className="absolute inset-0 rounded-2xl bg-linear-to-br from-white/10 to-transparent dark:from-cyan-200/4 pointer-events-none"
           initial={{ opacity: 0 }}
           whileHover={{ opacity: 1 }}
           transition={{ duration: durations.normal }}

@@ -234,6 +234,13 @@ export const notificationApi = {
   delete: (id) => api.delete(`/notifications/${id}`),
 };
 
+export const aiApi = {
+  chat: (prompt) => api.post('/ai/chat', { prompt }),
+  getPredictions: (params) => api.get('/ai/predictions', params),
+  categorize: (data) => api.post('/ai/categorize', data),
+  parseReceiptText: (rawText) => api.post('/ai/receipt/parse', { rawText }),
+};
+
 export const accountApi = {
   getAll: () => api.get('/accounts'),
   getById: (id) => api.get(`/accounts/${id}`),

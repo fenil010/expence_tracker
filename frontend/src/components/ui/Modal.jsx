@@ -120,7 +120,7 @@ export default function Modal({
             exit="exit"
             className={`
               relative w-full ${maxWidth}
-              bg-linen dark:bg-zinc-900 border border-stone/30 dark:border-zinc-700
+              glass-elevated
               rounded-2xl shadow-2xl
               overflow-hidden
               ${mobile ? 'mb-0 rounded-b-none' : ''}
@@ -132,7 +132,7 @@ export default function Modal({
           >
             {/* Header */}
             {title && (
-              <div className="flex items-center justify-between px-6 py-4 border-b border-stone/30 dark:border-zinc-700">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-stone/20 dark:border-zinc-700/50 bg-white/40 dark:bg-zinc-800/30">
                 <h2
                   id="modal-title"
                   className="text-lg font-semibold text-obsidian dark:text-white"
@@ -142,12 +142,12 @@ export default function Modal({
                 {showCloseButton && (
                   <motion.button
                     onClick={onClose}
-                    className="p-1.5 rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer"
+                    className="p-2 rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-white/60 dark:hover:bg-zinc-700/50 transition-all duration-300 cursor-pointer"
                     whileHover={{ scale: 1.1, rotate: 90 }}
                     whileTap={{ scale: 0.9 }}
                     aria-label="Close modal"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-5 h-5" />
                   </motion.button>
                 )}
               </div>

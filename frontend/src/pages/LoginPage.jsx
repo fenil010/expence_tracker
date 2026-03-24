@@ -95,12 +95,32 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-parchment dark:bg-zinc-950 flex items-center justify-center px-4">
+    <div className="min-h-screen app-shell grid lg:grid-cols-2">
       {/* Subtle background pattern */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-1/4 -left-32 w-96 h-96 bg-sand/30 dark:bg-zinc-800/30 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-linen/50 dark:bg-zinc-900/50 rounded-full blur-3xl" />
       </div>
+
+      <div className="hidden lg:flex relative p-12 xl:p-16 z-10">
+        <div className="grid-bg absolute inset-0 opacity-40" />
+        <div className="relative flex flex-col justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.22em] text-drift dark:text-zinc-500">Premium Personal Finance Platform</p>
+            <h2 className="text-5xl font-semibold text-obsidian dark:text-white mt-4">FinTrack AI</h2>
+            <p className="text-sm text-drift dark:text-zinc-400 mt-4 max-w-md">
+              AI-powered budgeting, instant analytics, and a conversational assistant for your money decisions.
+            </p>
+          </div>
+          <div className="space-y-3">
+            <div className="glass-card rounded-xl p-3 text-sm text-char dark:text-zinc-200">Ask expenses in natural language</div>
+            <div className="glass-card rounded-xl p-3 text-sm text-char dark:text-zinc-200">Auto-categorize merchant activity with confidence scores</div>
+            <div className="glass-card rounded-xl p-3 text-sm text-char dark:text-zinc-200">Track budgets and recurring charges in one workspace</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center px-4 sm:px-8 py-8">
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}
@@ -338,9 +358,10 @@ export default function LoginPage() {
           transition={{ delay: 0.5 }}
           className="text-center text-xs text-drift dark:text-zinc-500 mt-8"
         >
-          Simple, calm financial tracking.
+          FinTrack AI. Premium personal finance command center.
         </motion.p>
       </motion.div>
+      </div>
     </div>
   );
 }

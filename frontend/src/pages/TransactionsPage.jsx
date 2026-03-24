@@ -19,7 +19,7 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [filters, setFilters] = useState({ type: '', category: '', search: '', tags: '', startDate: '', endDate: '' });
+  const [filters, setFilters] = useState({ type: '', category: '', search: '', tags: '', startDate: '', endDate: '', minAmount: '', maxAmount: '', recurringOnly: false });
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -44,6 +44,8 @@ export default function TransactionsPage() {
       if (filters.tags) params.tags = filters.tags;
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
+      if (filters.minAmount) params.minAmount = filters.minAmount;
+      if (filters.maxAmount) params.maxAmount = filters.maxAmount;
 
       const res = await transactionApi.getAll(params);
       const newTransactions = res.data?.transactions || res.data || [];
@@ -96,7 +98,7 @@ export default function TransactionsPage() {
       setHasMore(true);
       fetchTransactions(1, false);
     }
-  }, [filters.type, filters.category, filters.startDate, filters.endDate, filters.search, filters.tags]);
+  }, [filters.type, filters.category, filters.startDate, filters.endDate, filters.search, filters.tags, filters.minAmount, filters.maxAmount, filters.recurringOnly]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -131,6 +133,9 @@ export default function TransactionsPage() {
       const matchesAll = tagList.every((tag) => txTags.includes(tag));
       if (!matchesAll) return false;
     }
+    if (filters.recurringOnly && !tx.recurringRule && !tx.isRecurring) {
+      return false;
+    }
     return true;
   });
 
@@ -156,10 +161,10 @@ export default function TransactionsPage() {
     return top;
   }, [filtered]);
 
-  const hasActiveFilters = filters.type || filters.category || filters.search || filters.tags || filters.startDate || filters.endDate;
+  const hasActiveFilters = filters.type || filters.category || filters.search || filters.tags || filters.startDate || filters.endDate || filters.minAmount || filters.maxAmount || filters.recurringOnly;
 
   const clearFilters = () => {
-    setFilters({ type: '', category: '', search: '', tags: '', startDate: '', endDate: '' });
+    setFilters({ type: '', category: '', search: '', tags: '', startDate: '', endDate: '', minAmount: '', maxAmount: '', recurringOnly: false });
   };
 
   return (
@@ -293,6 +298,24 @@ export default function TransactionsPage() {
                   onChange={(e) => setFilters((p) => ({ ...p, endDate: e.target.value }))}
                 />
               </div>
+              <div className="w-32">
+                <Input
+                  label="Min"
+                  type="number"
+                  min="0"
+                  value={filters.minAmount}
+                  onChange={(e) => setFilters((p) => ({ ...p, minAmount: e.target.value }))}
+                />
+              </div>
+              <div className="w-32">
+                <Input
+                  label="Max"
+                  type="number"
+                  min="0"
+                  value={filters.maxAmount}
+                  onChange={(e) => setFilters((p) => ({ ...p, maxAmount: e.target.value }))}
+                />
+              </div>
               <div className="min-w-48 flex-1">
                 <Input
                   label="Tags"
@@ -301,6 +324,14 @@ export default function TransactionsPage() {
                   onChange={(e) => setFilters((p) => ({ ...p, tags: e.target.value }))}
                 />
               </div>
+              <label className="flex items-center gap-2 text-xs text-drift dark:text-zinc-500 pb-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.recurringOnly}
+                  onChange={(e) => setFilters((p) => ({ ...p, recurringOnly: e.target.checked }))}
+                />
+                Recurring only
+              </label>
               {hasActiveFilters && (
                 <button
                   onClick={clearFilters}

@@ -52,11 +52,11 @@ export const COLOR_SCHEMES = {
 
 export function ThemeProvider({ children }) {
   const [mode, setMode] = useState(() => {
-    return localStorage.getItem('theme') || 'system';
+    return localStorage.getItem('theme') || 'dark';
   });
 
   const [colorScheme, setColorScheme] = useState(() => {
-    return localStorage.getItem('colorScheme') || 'default';
+    return localStorage.getItem('colorScheme') || 'lavender';
   });
 
   const [accentColor, setAccentColor] = useState(() => {

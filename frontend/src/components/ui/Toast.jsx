@@ -1,82 +1,87 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, AlertCircle, X } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { durations, easings } from '../../utils/animations';
 
-const toastVariants = {
-  success: {
-    icon: CheckCircle,
-    bg: 'bg-linen dark:bg-zinc-900 border-stone/40 dark:border-zinc-700',
-    iconColor: 'text-emerald-700/70 dark:text-emerald-400',
-  },
-  error: {
-    icon: AlertCircle,
-    bg: 'bg-linen dark:bg-zinc-900 border-red-200/40 dark:border-red-800/40',
-    iconColor: 'text-red-700/60 dark:text-red-400',
-  },
+const icons = {
+  success: CheckCircle,
+  error: AlertCircle,
+  warning: AlertTriangle,
+  info: Info,
 };
 
-export function Toast({ message, type = 'success', onClose }) {
-  const config = toastVariants[type] || toastVariants.success;
-  const Icon = config.icon;
+const colors = {
+  success: 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-400',
+  error: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-400',
+  warning: 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-400',
+  info: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-400',
+};
+
+export function Toast({ message, type = 'info', duration = 5000, onClose }) {
+  const [progress, setProgress] = useState(100);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const Icon = icons[type];
 
   useEffect(() => {
-    const timer = setTimeout(onClose, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
+    if (isPaused) return;
+
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        const newProgress = prev - (100 / (duration / 50));
+        if (newProgress <= 0) {
+          onClose();
+          return 0;
+        }
+        return newProgress;
+      });
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [duration, onClose, isPaused]);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16, scale: 0.97 }}
+      initial={{ opacity: 0, y: -20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -8, scale: 0.97 }}
-      transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+      exit={{ opacity: 0, x: 100, scale: 0.95 }}
+      transition={{ duration: durations.normal, ease: easings.easeOut }}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
       className={`
-        flex items-center gap-3 px-4 py-3
-        ${config.bg} border rounded-xl shadow-elevated
-        min-w-[280px] max-w-sm
+        relative w-full max-w-sm
+        ${colors[type]}
+        border rounded-xl shadow-lg
+        p-4 pr-12
+        backdrop-blur-xl
       `}
+      role="alert"
+      aria-live={type === 'error' ? 'assertive' : 'polite'}
     >
-      <Icon className={`w-4 h-4 ${config.iconColor} shrink-0`} />
-      <p className="text-sm text-char dark:text-zinc-200 flex-1">{message}</p>
+      <div className="flex items-start gap-3">
+        <Icon className="w-5 h-5 shrink-0 mt-0.5" />
+        <p className="text-sm font-medium flex-1">{message}</p>
+      </div>
+
       <button
         onClick={onClose}
-        className="p-1 text-drift dark:text-zinc-500 hover:text-char dark:hover:text-zinc-200 transition-colors cursor-pointer"
+        className="absolute top-3 right-3 p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+        aria-label="Close notification"
       >
-        <X className="w-3.5 h-3.5" />
+        <X className="w-4 h-4" />
       </button>
+
+      {/* Progress bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/10 dark:bg-white/10 rounded-b-xl overflow-hidden">
+        <motion.div
+          className="h-full bg-current opacity-50"
+          style={{ width: `${progress}%` }}
+          transition={{ duration: 0.05, ease: 'linear' }}
+        />
+      </div>
     </motion.div>
   );
 }
 
-let toastId = 0;
-let addToastFn = null;
-
-export function toast(message, type = 'success') {
-  addToastFn?.({ id: ++toastId, message, type });
-}
-
-export function ToastContainer() {
-  const [toasts, setToasts] = useState([]);
-
-  useEffect(() => {
-    addToastFn = (t) => setToasts((prev) => [...prev, t]);
-    return () => { addToastFn = null; };
-  }, []);
-
-  const remove = (id) => setToasts((prev) => prev.filter((t) => t.id !== id));
-
-  return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2">
-      <AnimatePresence>
-        {toasts.map((t) => (
-          <Toast
-            key={t.id}
-            message={t.message}
-            type={t.type}
-            onClose={() => remove(t.id)}
-          />
-        ))}
-      </AnimatePresence>
-    </div>
-  );
-}
+// Re-export from useToast hook
+export { useToast as toast, ToastContainer } from '../../hooks/useToast.jsx';

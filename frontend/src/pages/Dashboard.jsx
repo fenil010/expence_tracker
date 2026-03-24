@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, Plus } from 'lucide-react';
+import { RefreshCw, Plus, Repeat2, Upload, FileScan } from 'lucide-react';
 import { PageWrapper, Card, Button, Badge, CardSkeleton, ChartSkeleton } from '../components/ui';
 import SpendingMeter from '../components/ui/SpendingMeter';
 import BalanceCards from '../components/dashboard/BalanceCards';
@@ -33,6 +33,7 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [insights, setInsights] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [receiptPreview, setReceiptPreview] = useState(null);
 
   const handleMarkAllAlertsRead = async () => {
     try {
@@ -72,6 +73,20 @@ export default function Dashboard() {
     window.addEventListener('transactionAdded', handleTransactionAdded);
     return () => window.removeEventListener('transactionAdded', handleTransactionAdded);
   }, []);
+
+  const recurringItems = [
+    { name: 'Rent', amount: 1200, due: 'in 8 days' },
+    { name: 'Spotify', amount: 9.99, due: 'in 3 days' },
+    { name: 'Gym', amount: 45, due: 'in 14 days' },
+  ];
+
+  const handleReceiptUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setReceiptPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
 
   if (loading) {
     return (
@@ -207,6 +222,47 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <InsightsPanel insights={insights} />
         <AlertsPanel alerts={alerts} onMarkAllRead={handleMarkAllAlertsRead} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <Card>
+          <div className="flex items-center gap-2 mb-4">
+            <Repeat2 className="w-4 h-4 text-(--color-accent)" />
+            <h3 className="text-base font-semibold text-obsidian dark:text-white">Recurring Transactions</h3>
+          </div>
+          <div className="space-y-2">
+            {recurringItems.map((item) => (
+              <div key={item.name} className="rounded-xl bg-sand/30 dark:bg-zinc-800/50 border border-stone/20 dark:border-zinc-700 px-3 py-2">
+                <p className="text-sm text-char dark:text-zinc-200">{item.name}</p>
+                <p className="text-xs text-drift dark:text-zinc-500">Next due {item.due}</p>
+                <p className="text-xs text-(--color-accent)">{formatCurrency(item.amount, currency)}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <FileScan className="w-4 h-4 text-(--color-accent)" />
+              <h3 className="text-base font-semibold text-obsidian dark:text-white">Receipt OCR Preview</h3>
+            </div>
+            <label className="text-xs px-2.5 py-1.5 rounded-lg bg-(--color-accent)/15 text-(--color-accent) cursor-pointer flex items-center gap-1">
+              <Upload className="w-3.5 h-3.5" />
+              Upload
+              <input type="file" accept="image/*" className="hidden" onChange={handleReceiptUpload} />
+            </label>
+          </div>
+          {receiptPreview ? (
+            <div className="rounded-xl overflow-hidden border border-stone/20 dark:border-zinc-700">
+              <img src={receiptPreview} alt="Receipt preview" className="w-full h-40 object-cover" />
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-stone/30 dark:border-zinc-700 p-6 text-center text-sm text-drift dark:text-zinc-500">
+              Upload a receipt image to preview OCR extraction before creating a transaction.
+            </div>
+          )}
+        </Card>
       </div>
 
       <RecentTransactions transactions={transactions} />

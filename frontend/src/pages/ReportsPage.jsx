@@ -4,13 +4,15 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
-import { Calendar, Download, BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, TrendingUp, TrendingDown } from 'lucide-react';
-import { PageWrapper, Card, Button, Select } from '../components/ui';
+import { Download, BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, Bot, Send, Sparkles, Wand2 } from 'lucide-react';
+import { PageWrapper, Card, Button, Select, Input } from '../components/ui';
 import { ChartSkeleton } from '../components/ui/Skeleton';
-import { reportApi } from '../services/api';
+import { aiApi, reportApi, transactionApi } from '../services/api';
 import { formatCurrency, getDefaultCurrency } from '../utils/currencies';
+import { useTheme } from '../context/ThemeContext';
 
 const MONO_COLORS = ['#1A1714', '#3D3830', '#8A8275', '#C4BDB0', '#E8E4DA', '#EFECE5'];
+const MONTH_NAMES = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const ChartTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -47,6 +49,7 @@ const itemAnim = {
 };
 
 export default function ReportsPage() {
+  const { resolved } = useTheme();
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [period, setPeriod] = useState('monthly');
@@ -54,7 +57,34 @@ export default function ReportsPage() {
   const [monthlyData, setMonthlyData] = useState([]);
   const [trendData, setTrendData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState([
+    { role: 'assistant', text: 'Ask your expenses. Example: What category increased most this month?' },
+  ]);
+  const [prediction, setPrediction] = useState(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
   const currency = getDefaultCurrency();
+  const isDark = resolved === 'dark';
+
+  const chartPalette = useMemo(() => ({
+    grid: isDark ? '#3B456D' : '#C4BDB0',
+    axis: isDark ? '#A8B2D8' : '#8A8275',
+    income: '#10b981',
+    expense: isDark ? '#fb7185' : '#ef4444',
+    spendingStroke: isDark ? '#7DD3FC' : '#3D3830',
+    pie: isDark
+      ? ['#E2E8FF', '#BDC9FF', '#9FADF8', '#7F8DE8', '#6172CC', '#4456A8']
+      : MONO_COLORS,
+  }), [isDark]);
+
+  const formatAxisValue = (value) => {
+    const num = Number(value) || 0;
+    if (Math.abs(num) >= 1000) {
+      return `${Math.round(num / 1000)}k`;
+    }
+    return `${Math.round(num)}`;
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -91,41 +121,103 @@ export default function ReportsPage() {
     }
   };
 
+  const handlePdfExport = () => {
+    const content = [
+      'FinTrack AI Insights',
+      `Period: ${period}`,
+      ...summaryStats.map((item) => `${item.label}: ${formatCurrency(Number(item.value), currency)}`),
+    ].join('\n');
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `insights_${period}_${new Date().toISOString().split('T')[0]}.txt`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   useEffect(() => {
     const fetchReports = async () => {
       setLoading(true);
       try {
-        // Pass period to both API calls
-        const [monthly, trends] = await Promise.all([
-          reportApi.getMonthly({ period }),
-          reportApi.getTrends({ period }),
+        const [primaryReport, trends, predictionRes, recentRes] = await Promise.all([
+          period === 'yearly' ? reportApi.getYearly({}) : reportApi.getMonthly({}),
+          reportApi.getTrends({ months: period === 'yearly' ? 24 : 6 }),
+          aiApi.getPredictions({ months: 6 }),
+          transactionApi.getAll({ limit: 5, sort: '-date', type: 'expense' }),
         ]);
 
-        const mData = monthly.data || {};
-        const dailyTrend = (mData.dailyTrend || []).map(d => ({
-          name: `Day ${d.day}`,
-          amount: (d.expense || 0) + (d.income || 0),
-        }));
-        setMonthlyData(dailyTrend);
+        const reportData = primaryReport.data || {};
+
+        if (period === 'yearly') {
+          const yearlySpending = (reportData.monthlyBreakdown || []).map(m => ({
+            name: MONTH_NAMES[m.month] || `M${m.month}`,
+            amount: Number(m.expense || 0),
+          }));
+          setMonthlyData(yearlySpending);
+        } else {
+          const dailySpending = (reportData.dailyTrend || []).map(d => ({
+            name: `Day ${d.day}`,
+            amount: Number(d.expense || 0),
+          }));
+          setMonthlyData(dailySpending);
+        }
 
         const tData = trends.data || {};
         const trendItems = (tData.trends || []).map(t => {
-          const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
           return {
-            name: `${monthNames[t.month] || t.month} ${t.year}`,
-            income: t.income || 0,
-            expenses: t.expense || 0,
-            expense: t.expense || 0,
-            net: t.net || 0,
+            name: `${MONTH_NAMES[t.month] || t.month} ${t.year}`,
+            income: Number(t.income || 0),
+            expenses: Number(t.expense || 0),
+            expense: Number(t.expense || 0),
+            net: Number(t.net || 0),
           };
         });
         setTrendData(trendItems);
 
-        const catData = (mData.categoryBreakdown || []).map(c => ({
+        const catData = (reportData.categoryBreakdown || [])
+          .filter((c) => (c.type ? c.type === 'expense' : true))
+          .map(c => ({
           name: c.name || c.categoryName || 'Other',
-          value: c.total || 0,
-        }));
+          value: Number(c.total || 0),
+        }))
+          .filter((c) => c.value > 0);
         setCategoryData(catData);
+
+        setPrediction(predictionRes.data || null);
+
+        const recentExpenses = (recentRes.data?.transactions || recentRes.data || [])
+          .filter((tx) => tx.type === 'expense')
+          .slice(0, 3);
+
+        if (recentExpenses.length > 0) {
+          const categorized = await Promise.allSettled(
+            recentExpenses.map((tx) => aiApi.categorize({
+              description: tx.description || '',
+              merchant: tx.merchant || '',
+            }))
+          );
+
+          const normalized = categorized
+            .map((result, index) => {
+              if (result.status !== 'fulfilled') return null;
+              const data = result.value?.data;
+              if (!data) return null;
+              return {
+                merchant: recentExpenses[index]?.merchant || recentExpenses[index]?.description || 'Transaction',
+                category: data.categoryName || 'Other',
+                confidence: Math.round((data.confidence || 0) * 100),
+              };
+            })
+            .filter(Boolean);
+
+          setSuggestions(normalized);
+        } else {
+          setSuggestions([]);
+        }
       } catch (err) {
         console.error('Reports fetch error:', err);
       } finally {
@@ -141,11 +233,16 @@ export default function ReportsPage() {
     { label: 'Total Expenses', value: trendData.reduce?.((s, d) => s + (d.expenses || 0), 0) || 0 },
     { label: 'Net Savings', value: trendData.reduce?.((s, d) => s + (d.income || 0) - (d.expenses || 0), 0) || 0 },
     { label: 'Avg Monthly Spend', value: trendData.length > 0 ? trendData.reduce((s, d) => s + (d.expenses || 0), 0) / trendData.length : 0 },
-  ], [trendData]);
+    {
+      label: 'Predicted Next Month',
+      value: prediction?.predictedNextMonthExpense || 0,
+      isPrediction: true,
+    },
+  ], [trendData, prediction]);
 
   if (loading) {
     return (
-      <PageWrapper title="Reports" subtitle="Detailed financial analytics">
+      <PageWrapper title="AI Insights" subtitle="Advanced analytics and AI guidance">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ChartSkeleton />
           <ChartSkeleton />
@@ -159,24 +256,24 @@ export default function ReportsPage() {
   const renderChart = () => {
     const commonProps = {
       data: trendData,
-      margin: { top: 4, right: 4, left: -20, bottom: 0 }
+      margin: { top: 8, right: 8, left: 8, bottom: 0 }
     };
 
     switch (chartType) {
       case 'line':
         return (
           <LineChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#C4BDB0" strokeOpacity={0.3} vertical={false} />
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} tickFormatter={(v) => `${v}`} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chartPalette.grid} strokeOpacity={0.3} vertical={false} />
+            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: chartPalette.axis, fontSize: 12 }} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: chartPalette.axis, fontSize: 12 }} tickFormatter={formatAxisValue} width={44} />
             <Tooltip content={<ChartTooltip />} />
             <Legend
               wrapperStyle={{ paddingTop: '20px' }}
               iconType="circle"
               formatter={(value) => <span className="text-xs text-char dark:text-zinc-300">{value === 'income' ? 'Income' : 'Expenses'}</span>}
             />
-            <Line type="monotone" dataKey="income" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} animationDuration={600} name="income" />
-            <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 4 }} animationDuration={600} name="expenses" />
+            <Line type="monotone" dataKey="income" stroke={chartPalette.income} strokeWidth={2.5} dot={{ r: 4 }} animationDuration={600} name="income" />
+            <Line type="monotone" dataKey="expenses" stroke={chartPalette.expense} strokeWidth={2.5} dot={{ r: 4 }} animationDuration={600} name="expenses" />
           </LineChart>
         );
       case 'area':
@@ -184,50 +281,69 @@ export default function ReportsPage() {
           <AreaChart {...commonProps}>
             <defs>
               <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#10b981" stopOpacity={0.01} />
+                <stop offset="0%" stopColor={chartPalette.income} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={chartPalette.income} stopOpacity={0.01} />
               </linearGradient>
               <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#ef4444" stopOpacity={0.01} />
+                <stop offset="0%" stopColor={chartPalette.expense} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={chartPalette.expense} stopOpacity={0.01} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#C4BDB0" strokeOpacity={0.3} vertical={false} />
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} tickFormatter={(v) => `${v}`} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chartPalette.grid} strokeOpacity={0.3} vertical={false} />
+            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: chartPalette.axis, fontSize: 12 }} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: chartPalette.axis, fontSize: 12 }} tickFormatter={formatAxisValue} width={44} />
             <Tooltip content={<ChartTooltip />} />
             <Legend
               wrapperStyle={{ paddingTop: '20px' }}
               iconType="circle"
               formatter={(value) => <span className="text-xs text-char dark:text-zinc-300">{value === 'income' ? 'Income' : 'Expenses'}</span>}
             />
-            <Area type="monotone" dataKey="income" stroke="#10b981" strokeWidth={2} fill="url(#incomeGradient)" animationDuration={800} name="income" />
-            <Area type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} fill="url(#expenseGradient)" animationDuration={800} name="expenses" />
+            <Area type="monotone" dataKey="income" stroke={chartPalette.income} strokeWidth={2} fill="url(#incomeGradient)" animationDuration={800} name="income" />
+            <Area type="monotone" dataKey="expenses" stroke={chartPalette.expense} strokeWidth={2} fill="url(#expenseGradient)" animationDuration={800} name="expenses" />
           </AreaChart>
         );
       default: // bar
         return (
           <BarChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#C4BDB0" strokeOpacity={0.3} vertical={false} />
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} tickFormatter={(v) => `${v}`} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chartPalette.grid} strokeOpacity={0.3} vertical={false} />
+            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: chartPalette.axis, fontSize: 12 }} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: chartPalette.axis, fontSize: 12 }} tickFormatter={formatAxisValue} width={44} />
             <Tooltip content={<ChartTooltip />} />
             <Legend
               wrapperStyle={{ paddingTop: '20px' }}
               iconType="circle"
               formatter={(value) => <span className="text-xs text-char dark:text-zinc-300">{value === 'income' ? 'Income' : 'Expenses'}</span>}
             />
-            <Bar dataKey="income" fill="#10b981" radius={[6, 6, 0, 0]} barSize={20} animationDuration={600} name="income" />
-            <Bar dataKey="expenses" fill="#ef4444" radius={[6, 6, 0, 0]} barSize={20} animationDuration={600} name="expenses" />
+            <Bar dataKey="income" fill={chartPalette.income} radius={[6, 6, 0, 0]} barSize={20} animationDuration={600} name="income" />
+            <Bar dataKey="expenses" fill={chartPalette.expense} radius={[6, 6, 0, 0]} barSize={20} animationDuration={600} name="expenses" />
           </BarChart>
         );
     }
   };
 
+  const handleAsk = async () => {
+    const question = chatInput.trim();
+    if (!question) return;
+    setChatMessages((prev) => [...prev, { role: 'user', text: question }]);
+    setAiBusy(true);
+
+    try {
+      const response = await aiApi.chat(question);
+      const answer = response.data?.answer || 'I could not find enough data to answer that yet.';
+      setChatMessages((prev) => [...prev, { role: 'assistant', text: answer }]);
+    } catch {
+      setChatMessages((prev) => [...prev, { role: 'assistant', text: 'AI is temporarily unavailable. Please try again.' }]);
+    } finally {
+      setAiBusy(false);
+    }
+
+    setChatInput('');
+  };
+
   return (
     <PageWrapper
-      title="Reports"
-      subtitle="Detailed financial analytics"
+      title="AI Insights"
+      subtitle="Advanced analytics, auto-categorization, and ask-your-expenses assistant"
       action={
         <div className="flex items-center gap-2">
           <Select
@@ -239,8 +355,9 @@ export default function ReportsPage() {
             ]}
           />
           <Button variant="secondary" icon={Download} size="sm" onClick={handleExport} loading={exporting}>
-            Export
+            CSV
           </Button>
+          <Button variant="secondary" size="sm" onClick={handlePdfExport}>PDF</Button>
         </div>
       }
     >
@@ -313,18 +430,18 @@ export default function ReportsPage() {
                 <EmptyChartState title="spending data" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={monthlyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                  <AreaChart data={monthlyData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
                     <defs>
                       <linearGradient id="reportGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3D3830" stopOpacity={0.15} />
-                        <stop offset="100%" stopColor="#3D3830" stopOpacity={0.01} />
+                        <stop offset="0%" stopColor={chartPalette.spendingStroke} stopOpacity={0.2} />
+                        <stop offset="100%" stopColor={chartPalette.spendingStroke} stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#C4BDB0" strokeOpacity={0.3} vertical={false} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8275', fontSize: 12 }} tickFormatter={(v) => `${v}`} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartPalette.grid} strokeOpacity={0.3} vertical={false} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: chartPalette.axis, fontSize: 12 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: chartPalette.axis, fontSize: 12 }} tickFormatter={formatAxisValue} width={44} />
                     <Tooltip content={<ChartTooltip />} />
-                    <Area type="monotone" dataKey="amount" stroke="#3D3830" strokeWidth={2} fill="url(#reportGradient)" animationDuration={800} />
+                    <Area type="monotone" dataKey="amount" stroke={chartPalette.spendingStroke} strokeWidth={2} fill="url(#reportGradient)" animationDuration={800} />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
@@ -354,7 +471,7 @@ export default function ReportsPage() {
                       animationDuration={600}
                     >
                       {categoryData.map((_, index) => (
-                        <Cell key={index} fill={MONO_COLORS[index % MONO_COLORS.length]} />
+                        <Cell key={index} fill={chartPalette.pie[index % chartPalette.pie.length]} />
                       ))}
                     </Pie>
                     <Tooltip content={<ChartTooltip />} />
@@ -367,7 +484,7 @@ export default function ReportsPage() {
                 {categoryData.slice(0, 5).map((item, i) => (
                   <div key={item.name} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: MONO_COLORS[i] }} />
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: chartPalette.pie[i % chartPalette.pie.length] }} />
                       <span className="text-char dark:text-zinc-300">{item.name}</span>
                     </div>
                     <span className="font-medium text-obsidian dark:text-white">{formatCurrency(Number(item.value), currency)}</span>
@@ -391,7 +508,9 @@ export default function ReportsPage() {
                   <span className="text-sm text-drift dark:text-zinc-400">{stat.label}</span>
                   <span className={`text-sm font-semibold tabular-nums ${stat.label === 'Net Savings' && stat.value < 0
                       ? 'text-red-600/70 dark:text-red-400'
-                      : 'text-obsidian dark:text-white'
+                      : stat.isPrediction
+                        ? 'text-cyan-600 dark:text-cyan-300'
+                        : 'text-obsidian dark:text-white'
                     }`}>
                     {formatCurrency(Number(stat.value), currency)}
                   </span>
@@ -400,6 +519,67 @@ export default function ReportsPage() {
             </div>
           </Card>
         </motion.div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <Card className="xl:col-span-1">
+          <div className="flex items-center gap-2 mb-4">
+            <Wand2 className="w-4 h-4 text-cyan-300" />
+            <h3 className="text-base font-semibold text-obsidian dark:text-white">Auto-Categorization</h3>
+          </div>
+          <div className="space-y-2">
+            {(suggestions.length ? suggestions : [
+              { merchant: 'Swiggy Order', category: 'Food', confidence: 72 },
+              { merchant: 'Uber Trip', category: 'Transport', confidence: 69 },
+            ]).map((item) => (
+              <div key={item.merchant} className="rounded-lg bg-sand/30 dark:bg-zinc-800/50 border border-stone/20 dark:border-zinc-700 px-3 py-2">
+                <p className="text-sm text-char dark:text-zinc-200">{item.merchant}</p>
+                <p className="text-xs text-drift dark:text-zinc-500">Suggest: {item.category}</p>
+                <p className="text-xs text-cyan-600 dark:text-cyan-300">Confidence: {item.confidence}%</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="xl:col-span-2 flex flex-col">
+          <div className="flex items-center gap-2 mb-4">
+            <Bot className="w-4 h-4 text-cyan-300" />
+            <h3 className="text-base font-semibold text-obsidian dark:text-white">Ask Your Expenses</h3>
+            <Sparkles className="w-4 h-4 text-cyan-300 ml-auto" />
+          </div>
+
+          <div className="rounded-xl bg-sand/30 dark:bg-zinc-800/50 border border-stone/20 dark:border-zinc-700 p-3 space-y-2 max-h-64 overflow-auto">
+            {chatMessages.map((message, index) => (
+              <motion.div
+                key={`${message.role}-${index}`}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`rounded-lg px-3 py-2 text-xs ${message.role === 'assistant'
+                  ? 'bg-accent/15 text-char dark:text-zinc-100'
+                  : 'bg-zinc-900 text-zinc-100 dark:bg-zinc-200 dark:text-zinc-900 ml-8'
+                }`}
+              >
+                {message.text}
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-3 flex items-center gap-2">
+            <Input
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAsk();
+                }
+              }}
+              placeholder="Ask: Why did transport rise this month?"
+            />
+            <Button icon={Send} onClick={handleAsk}>Ask</Button>
+          </div>
+          {aiBusy && <p className="mt-2 text-xs text-drift dark:text-zinc-400">AI is thinking...</p>}
+        </Card>
       </div>
     </PageWrapper>
   );

@@ -40,24 +40,24 @@ export default function PageWrapper({
       initial="initial"
       animate="animate"
       exit="exit"
-      className={`space-y-6 ${className}`}
+      className={`space-y-7 ${className}`}
     >
       {(title || action) && (
         <motion.div
           variants={headerVariants}
-          className="flex items-end justify-between gap-4"
+          className="flex flex-wrap items-end justify-between gap-4"
         >
-          <div>
+          <div className="min-w-0">
             {title && (
-              <h1 className="text-3xl font-semibold text-obsidian dark:text-white tracking-tight">
+              <h1 className="text-3xl md:text-4xl font-semibold text-obsidian dark:text-white tracking-tight leading-tight">
                 {title}
               </h1>
             )}
             {subtitle && (
-              <p className="mt-1.5 text-sm text-drift dark:text-zinc-400">{subtitle}</p>
+              <p className="mt-2 text-sm md:text-base text-drift dark:text-zinc-400 max-w-3xl">{subtitle}</p>
             )}
           </div>
-          {action && <div>{action}</div>}
+          {action && <div className="shrink-0">{action}</div>}
         </motion.div>
       )}
       {children}

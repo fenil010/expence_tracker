@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Bell, ChevronDown, Command, Sun, Moon, Monitor, Menu } from 'lucide-react';
+import { Plus, Search, Bell, ChevronDown, Sun, Moon, Monitor, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -10,7 +10,7 @@ const pageTitles = {
   '/transactions': 'Transactions',
   '/budgets': 'Budgets',
   '/goals': 'Goals',
-  '/reports': 'Reports',
+  '/reports': 'AI Insights',
   '/settings': 'Settings',
   '/profile': 'Profile',
 };
@@ -42,8 +42,8 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-parchment/70 dark:bg-zinc-950/70 backdrop-blur-xl border-b border-white/40 dark:border-zinc-800/80 transition-colors duration-300">
-      <div className="flex items-center justify-between h-14 px-4 sm:px-6 lg:px-10">
+    <header className="sticky top-0 z-30 bg-white/45 dark:bg-zinc-950/45 backdrop-blur-2xl border-b border-white/55 dark:border-indigo-900/60 transition-colors duration-300">
+      <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-10">
         {/* Breadcrumb-style page indicator */}
         <div className="flex items-center gap-3">
           {/* Mobile menu button */}
@@ -62,7 +62,7 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="flex items-center gap-2 text-sm"
           >
-            <span className="text-drift dark:text-zinc-500">Ledger</span>
+            <span className="text-drift dark:text-zinc-500">FinTrack AI</span>
             <span className="text-stone dark:text-zinc-700">/</span>
             <span className="font-medium text-char dark:text-zinc-200">{title}</span>
           </motion.div>
@@ -75,7 +75,7 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={openCommandPalette}
-            className="flex items-center h-9.5 px-3 gap-2 rounded-xl text-drift dark:text-zinc-400 bg-sand/40 dark:bg-zinc-800/60 border border-stone/20 dark:border-zinc-700 hover:bg-sand/60 dark:hover:bg-zinc-800 transition-colors duration-200 cursor-pointer"
+            className="flex items-center h-10 px-3.5 gap-2 rounded-xl text-drift dark:text-zinc-400 bg-white/55 dark:bg-zinc-900/60 border border-white/70 dark:border-indigo-900/65 hover:bg-white/75 dark:hover:bg-zinc-900 transition-colors duration-200 cursor-pointer"
           >
             <Search className="w-3.5 h-3.5" strokeWidth={1.8} />
             <span className="text-xs hidden sm:inline">Search...</span>
@@ -88,7 +88,7 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="w-9.5 h-9.5 flex items-center justify-center rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand/50 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer relative"
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-white/55 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer relative"
           >
             <Bell className="w-4.5 h-4.5" strokeWidth={1.8} />
             <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-obsidian dark:bg-white rounded-full" />
@@ -99,7 +99,7 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggleTheme}
-            className="w-9.5 h-9.5 flex items-center justify-center rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-sand/50 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer"
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-drift dark:text-zinc-400 hover:text-char dark:hover:text-zinc-200 hover:bg-white/55 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer"
             title={`Current theme: ${mode}`}
           >
             <ThemeIcon className="w-4.5 h-4.5" strokeWidth={1.8} />
@@ -111,10 +111,10 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
             whileTap={{ scale: 0.97 }}
             onClick={onAddTransaction}
             className="
-              flex items-center justify-center h-9.5 px-4 gap-2 whitespace-nowrap
-              bg-linear-to-br from-(--color-accent) to-(--color-accent)/90
-              text-(--color-accent-fg) text-sm font-medium
-              rounded-xl hover:shadow-lg hover:shadow-(--color-accent)/20
+              flex items-center justify-center h-10 px-4 gap-2 whitespace-nowrap
+              bg-linear-to-br from-accent to-accent/85
+              text-accent-fg text-sm font-semibold
+              rounded-xl hover:shadow-lg
               transition-all duration-300 cursor-pointer
             "
           >
@@ -128,7 +128,7 @@ export default function TopNavbar({ onAddTransaction, onMenuToggle }) {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center justify-center h-9.5 gap-2 pl-2 pr-1.5 rounded-xl hover:bg-sand/50 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer"
+              className="flex items-center justify-center h-10 gap-2 pl-2 pr-1.5 rounded-xl hover:bg-white/55 dark:hover:bg-zinc-800 transition-colors duration-300 cursor-pointer"
             >
               <div className="w-7 h-7 rounded-lg bg-sand dark:bg-zinc-800 flex items-center justify-center">
                 <span className="text-xs font-semibold text-obsidian dark:text-white">
