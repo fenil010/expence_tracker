@@ -63,8 +63,21 @@ app.use(helmet({
 }));
 
 // CORS - Enable Cross-Origin Resource Sharing
+// Parse allowed origins from env (comma-separated) with sensible defaults
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,https://expence-tracker-mu-roan.vercel.app')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS: Origin ${origin} not allowed`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
