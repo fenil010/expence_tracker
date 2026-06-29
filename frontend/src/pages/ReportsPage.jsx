@@ -90,7 +90,7 @@ export default function ReportsPage() {
     setExporting(true);
     try {
       const token = localStorage.getItem('authToken');
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://expence-tracker-zorf.onrender.com/api';
       const url = new URL(`${API_BASE}/reports/export/csv`);
       url.searchParams.set('period', period);
 
